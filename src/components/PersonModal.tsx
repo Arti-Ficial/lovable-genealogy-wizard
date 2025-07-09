@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -150,6 +149,7 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship }: PersonModalProps
                     date > new Date() || date < new Date("1900-01-01")
                   }
                   initialFocus
+                  enableYearNavigation={true}
                   className="pointer-events-auto"
                 />
               </PopoverContent>
@@ -186,6 +186,7 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship }: PersonModalProps
                     date > new Date() || date < new Date("1900-01-01")
                   }
                   initialFocus
+                  enableYearNavigation={true}
                   className="pointer-events-auto"
                 />
               </PopoverContent>
