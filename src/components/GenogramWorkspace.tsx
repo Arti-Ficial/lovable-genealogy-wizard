@@ -14,9 +14,9 @@ type GenogramWorkspaceProps = {
 const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
   const [people, setPeople] = useState<Person[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [currentRelationship, setCurrentRelationship] = useState<'mother' | 'father' | 'sibling' | 'partner'>('mother');
+  const [currentRelationship, setCurrentRelationship] = useState<'mother' | 'father' | 'sibling' | 'partner' | 'child'>('mother');
 
-  const handleAddPerson = (relationship: 'mother' | 'father' | 'sibling' | 'partner') => {
+  const handleAddPerson = (relationship: 'mother' | 'father' | 'sibling' | 'partner' | 'child') => {
     setCurrentRelationship(relationship);
     setModalOpen(true);
   };
@@ -45,6 +45,8 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         return { x: baseX + 200, y: baseY };
       case 'sibling':
         return { x: baseX - 200, y: baseY };
+      case 'child':
+        return { x: baseX, y: baseY + 150 };
       default:
         return { x: baseX, y: baseY };
     }
@@ -173,6 +175,17 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
               </Button>
             </div>
 
+            <div className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{ left: 400, top: 350 }}>
+              <Button
+                onClick={() => handleAddPerson('child')}
+                className="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 border-2 border-yellow-300 h-12 px-4"
+                variant="outline"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Kind hinzufügen
+              </Button>
+            </div>
+
             {/* Render all added people */}
             {people.map(person => renderPersonSymbol(person))}
           </div>
@@ -184,6 +197,7 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         onClose={() => setModalOpen(false)}
         onSave={handleSavePerson}
         relationship={currentRelationship}
+        existingPeople={people}
       />
     </div>
   );

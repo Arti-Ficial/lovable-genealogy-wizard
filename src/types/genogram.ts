@@ -9,7 +9,8 @@ export type Person = {
   deathDate?: Date;
   occupation?: string;
   notes?: string;
-  relationship: 'self' | 'mother' | 'father' | 'sibling' | 'partner';
+  relationship: 'self' | 'mother' | 'father' | 'sibling' | 'partner' | 'child';
+  parentIds?: string[]; // IDs der Eltern dieser Person
   position: { x: number; y: number };
 };
 

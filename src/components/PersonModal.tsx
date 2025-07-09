@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
@@ -17,17 +19,19 @@ type PersonModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onSave: (person: Omit<Person, 'id' | 'position'>) => void;
-  relationship: 'mother' | 'father' | 'sibling' | 'partner';
+  relationship: 'mother' | 'father' | 'sibling' | 'partner' | 'child';
+  existingPeople: Person[];
 };
 
-const PersonModal = ({ isOpen, onClose, onSave, relationship }: PersonModalProps) => {
+const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople }: PersonModalProps) => {
   const [formData, setFormData] = useState({
     name: '',
     gender: '' as Gender | '',
     birthDate: undefined as Date | undefined,
     deathDate: undefined as Date | undefined,
     occupation: '',
-    notes: ''
+    notes: '',
+    parentIds: [] as string[]
   });
 
   const getModalTitle = () => {
@@ -36,8 +40,22 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship }: PersonModalProps
       case 'father': return 'Vater erfassen';
       case 'sibling': return 'Geschwister erfassen';
       case 'partner': return 'Partner/in erfassen';
+      case 'child': return 'Kind erfassen';
       default: return 'Person erfassen';
     }
+  };
+
+  const shouldShowParentSelection = () => {
+    return relationship === 'sibling' || relationship === 'child';
+  };
+
+  const handleParentToggle = (personId: string, checked: boolean) => {
+    setFormData(prev => ({
+      ...prev,
+      parentIds: checked 
+        ? [...prev.parentIds, personId]
+        : prev.parentIds.filter(id => id !== personId)
+    }));
   };
 
   const handleSave = () => {
@@ -52,7 +70,8 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship }: PersonModalProps
       deathDate: formData.deathDate,
       occupation: formData.occupation || undefined,
       notes: formData.notes || undefined,
-      relationship
+      relationship: relationship === 'child' ? 'child' : relationship,
+      parentIds: shouldShowParentSelection() ? formData.parentIds : undefined
     });
 
     // Reset form
@@ -62,7 +81,8 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship }: PersonModalProps
       birthDate: undefined,
       deathDate: undefined,
       occupation: '',
-      notes: ''
+      notes: '',
+      parentIds: []
     });
     onClose();
   };
@@ -75,7 +95,8 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship }: PersonModalProps
       birthDate: undefined,
       deathDate: undefined,
       occupation: '',
-      notes: ''
+      notes: '',
+      parentIds: []
     });
     onClose();
   };
@@ -219,6 +240,36 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship }: PersonModalProps
               className="min-h-[100px] text-base resize-none"
             />
           </div>
+
+          {shouldShowParentSelection() && existingPeople.length > 0 && (
+            <div className="space-y-4 border-t pt-6">
+              <Label className="text-base font-medium text-gray-700">
+                Eltern des {relationship === 'child' ? 'Kindes' : 'Geschwisters'}
+              </Label>
+              <div className="space-y-3">
+                {existingPeople.map((person) => (
+                  <div key={person.id} className="flex items-center space-x-3">
+                    <Checkbox
+                      id={`parent-${person.id}`}
+                      checked={formData.parentIds.includes(person.id)}
+                      onCheckedChange={(checked) => 
+                        handleParentToggle(person.id, checked as boolean)
+                      }
+                    />
+                    <Label 
+                      htmlFor={`parent-${person.id}`}
+                      className="text-sm font-normal text-gray-600 cursor-pointer"
+                    >
+                      {person.name} ({person.gender === 'male' ? 'Männlich' : 'Weiblich'})
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500">
+                Wählen Sie die Eltern aus, um Halbgeschwister-Beziehungen korrekt darzustellen.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-3 pt-6">
