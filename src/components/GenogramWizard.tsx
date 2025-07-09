@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,17 +12,11 @@ import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import FamilyIcon from './FamilyIcon';
-
-type PersonalInfo = {
-  name: string;
-  birthDate: Date | undefined;
-  gender: string;
-  maritalStatus: string;
-  purpose: string;
-};
+import GenogramWorkspace from './GenogramWorkspace';
+import { PersonalInfo } from '@/types/genogram';
 
 const GenogramWizard = () => {
-  const [currentStep, setCurrentStep] = useState<'welcome' | 'personal'>('welcome');
+  const [currentStep, setCurrentStep] = useState<'welcome' | 'personal' | 'workspace'>('welcome');
   const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
     name: '',
     birthDate: undefined,
@@ -38,7 +31,7 @@ const GenogramWizard = () => {
 
   const handlePersonalInfoSubmit = () => {
     console.log('Personal Info:', personalInfo);
-    // Here you would proceed to the next step
+    setCurrentStep('workspace');
   };
 
   const updatePersonalInfo = (field: keyof PersonalInfo, value: any) => {
@@ -74,6 +67,10 @@ const GenogramWizard = () => {
         </div>
       </div>
     );
+  }
+
+  if (currentStep === 'workspace') {
+    return <GenogramWorkspace personalInfo={personalInfo} />;
   }
 
   return (
