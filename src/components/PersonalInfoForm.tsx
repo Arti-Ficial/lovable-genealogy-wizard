@@ -79,6 +79,7 @@ const PersonalInfoForm = ({ personalInfo, onUpdatePersonalInfo, onSubmit }: Pers
                     date > new Date() || date < new Date("1900-01-01")
                   }
                   initialFocus
+                  enableYearNavigation={true}
                   className="pointer-events-auto"
                 />
               </PopoverContent>
