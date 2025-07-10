@@ -17,14 +17,25 @@ const GenogramResult = ({ mermaidCode, onReset }: GenogramResultProps) => {
         // Dynamically import mermaid
         const mermaid = (await import('mermaid')).default;
         
-        // Initialize mermaid
+        // Initialize mermaid with correct configuration for shape styling
         mermaid.initialize({
-          startOnLoad: true,
+          startOnLoad: false,
           theme: 'default',
+          themeVariables: {
+            primaryColor: '#ffffff',
+            primaryTextColor: '#000000',
+            primaryBorderColor: '#000000',
+            lineColor: '#000000'
+          },
           flowchart: {
             htmlLabels: true,
-            curve: 'basis'
-          }
+            curve: 'basis',
+            useMaxWidth: true,
+            wrappingWidth: 200
+          },
+          fontFamily: 'arial',
+          fontSize: 12,
+          logLevel: 'debug'
         });
 
         // Clear any existing content
@@ -32,9 +43,23 @@ const GenogramResult = ({ mermaidCode, onReset }: GenogramResultProps) => {
         if (element) {
           element.innerHTML = '';
           
-          // Render the mermaid diagram
-          const { svg } = await mermaid.render('genogram', mermaidCode);
+          console.log('Mermaid code to render:', mermaidCode);
+          
+          // Generate unique ID for this render
+          const diagramId = `genogram-${Date.now()}`;
+          
+          // Render the mermaid diagram with explicit options
+          const { svg } = await mermaid.render(diagramId, mermaidCode, {
+            fontSize: 12,
+            fontFamily: 'arial'
+          });
+          
           element.innerHTML = svg;
+          
+          // Force re-render to ensure styles are applied
+          element.style.display = 'none';
+          element.offsetHeight; // trigger reflow
+          element.style.display = 'block';
         }
       } catch (error) {
         console.error('Error rendering Mermaid diagram:', error);
@@ -45,7 +70,9 @@ const GenogramResult = ({ mermaidCode, onReset }: GenogramResultProps) => {
       }
     };
 
-    loadMermaid();
+    // Add small delay to ensure DOM is ready
+    const timer = setTimeout(loadMermaid, 100);
+    return () => clearTimeout(timer);
   }, [mermaidCode]);
 
   return (
@@ -61,7 +88,7 @@ const GenogramResult = ({ mermaidCode, onReset }: GenogramResultProps) => {
         </CardHeader>
         
         <CardContent>
-          <div className="bg-white rounded-lg border p-6 mb-6 min-h-[500px] flex items-center justify-center">
+          <div className="bg-white rounded-lg border p-6 mb-6 min-h-[500px] flex items-center justify-center overflow-auto">
             <div id="genogram-diagram" className="w-full h-full flex items-center justify-center">
               <div className="text-gray-500">Genogramm wird geladen...</div>
             </div>
