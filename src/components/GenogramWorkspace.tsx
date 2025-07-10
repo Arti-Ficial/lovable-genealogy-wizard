@@ -5,6 +5,7 @@ import { Plus, Square, Circle, Loader2 } from 'lucide-react';
 import { Person, PersonalInfo } from '@/types/genogram';
 import PersonModal from './PersonModal';
 import FamilyIcon from './FamilyIcon';
+import GenogramResult from './GenogramResult';
 import { useToast } from '@/hooks/use-toast';
 
 type GenogramWorkspaceProps = {
@@ -16,6 +17,7 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
   const [modalOpen, setModalOpen] = useState(false);
   const [currentRelationship, setCurrentRelationship] = useState<'mother' | 'father' | 'sibling' | 'partner' | 'child'>('mother');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [mermaidCode, setMermaidCode] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleAddPerson = (relationship: 'mother' | 'father' | 'sibling' | 'partner' | 'child') => {
@@ -166,10 +168,18 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
       });
 
       if (response.ok) {
-        toast({
-          title: "Genogramm erfolgreich erstellt!",
-          description: "Ihr Genogramm wurde generiert und gesendet.",
-        });
+        const result = await response.json();
+        console.log('API response:', result);
+        
+        if (result.mermaidCode) {
+          setMermaidCode(result.mermaidCode);
+          toast({
+            title: "Genogramm erfolgreich erstellt!",
+            description: "Ihr Genogramm wurde generiert und wird angezeigt.",
+          });
+        } else {
+          throw new Error('No mermaid code in response');
+        }
       } else {
         throw new Error('API call failed');
       }
@@ -184,6 +194,11 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleReset = () => {
+    setMermaidCode(null);
+    setPeople([]);
   };
 
   const renderPersonSymbol = (person: Person) => {
@@ -234,6 +249,11 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
       />
     );
   };
+
+  // If mermaid code is available, show the result view
+  if (mermaidCode) {
+    return <GenogramResult mermaidCode={mermaidCode} onReset={handleReset} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
