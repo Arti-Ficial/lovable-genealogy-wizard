@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -93,7 +92,9 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
           birthDate: person.birthDate.toISOString().split('T')[0],
           deathDate: person.deathDate?.toISOString().split('T')[0] || undefined,
           occupation: person.occupation || '',
-          notes: person.notes || ''
+          notes: person.notes || '',
+          isEgo: false,
+          maritalStatus: ''
         });
       });
 
