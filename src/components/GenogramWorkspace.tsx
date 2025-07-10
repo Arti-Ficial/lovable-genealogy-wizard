@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Square, Circle } from 'lucide-react';
+import { Plus, Square, Circle, Loader2 } from 'lucide-react';
 import { Person, PersonalInfo } from '@/types/genogram';
 import PersonModal from './PersonModal';
 import FamilyIcon from './FamilyIcon';
+import { useToast } from '@/hooks/use-toast';
 
 type GenogramWorkspaceProps = {
   personalInfo: PersonalInfo;
@@ -15,6 +16,8 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
   const [people, setPeople] = useState<Person[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [currentRelationship, setCurrentRelationship] = useState<'mother' | 'father' | 'sibling' | 'partner' | 'child'>('mother');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const { toast } = useToast();
 
   const handleAddPerson = (relationship: 'mother' | 'father' | 'sibling' | 'partner' | 'child') => {
     setCurrentRelationship(relationship);
@@ -49,6 +52,134 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         return { x: baseX, y: baseY + 150 };
       default:
         return { x: baseX, y: baseY };
+    }
+  };
+
+  const generateGenogramData = async () => {
+    setIsGenerating(true);
+    
+    try {
+      // Create ego person (self)
+      const egoPerson = {
+        id: 1,
+        name: personalInfo.name,
+        gender: personalInfo.gender === 'male' ? 'male' : personalInfo.gender === 'female' ? 'female' : 'unknown',
+        birthDate: personalInfo.birthDate?.toISOString().split('T')[0] || '',
+        isEgo: true,
+        maritalStatus: personalInfo.maritalStatus,
+        notes: personalInfo.purpose || ''
+      };
+
+      // Create other persons with incremental IDs
+      const persons = [egoPerson];
+      const relationships = [];
+      let nextId = 2;
+
+      // Map string IDs to numeric IDs for API
+      const idMapping: { [key: string]: number } = {};
+      idMapping['ego'] = 1; // ego person always has ID 1
+
+      // Add all other people
+      people.forEach(person => {
+        const numericId = nextId++;
+        idMapping[person.id] = numericId;
+        
+        persons.push({
+          id: numericId,
+          name: person.name,
+          gender: person.gender === 'male' ? 'male' : person.gender === 'female' ? 'female' : 'unknown',
+          birthDate: person.birthDate.toISOString().split('T')[0],
+          deathDate: person.deathDate?.toISOString().split('T')[0],
+          occupation: person.occupation || '',
+          notes: person.notes || ''
+        });
+      });
+
+      // Create relationships
+      people.forEach(person => {
+        const personId = idMapping[person.id];
+        
+        switch (person.relationship) {
+          case 'mother':
+          case 'father':
+            relationships.push({
+              from: personId,
+              to: 1, // ego
+              type: 'parent-child'
+            });
+            break;
+          case 'child':
+            relationships.push({
+              from: 1, // ego
+              to: personId,
+              type: 'parent-child'
+            });
+            break;
+          case 'partner':
+            relationships.push({
+              from: 1, // ego
+              to: personId,
+              type: 'partner'
+            });
+            break;
+          case 'sibling':
+            relationships.push({
+              from: 1, // ego
+              to: personId,
+              type: 'sibling'
+            });
+            break;
+        }
+
+        // Add parent relationships for children and siblings if parentIds exist
+        if (person.parentIds && person.parentIds.length > 0) {
+          person.parentIds.forEach(parentId => {
+            const parentNumericId = idMapping[parentId];
+            if (parentNumericId) {
+              relationships.push({
+                from: parentNumericId,
+                to: personId,
+                type: 'parent-child'
+              });
+            }
+          });
+        }
+      });
+
+      const genogramData = {
+        persons,
+        relationships
+      };
+
+      console.log('Generated genogram data:', genogramData);
+
+      // Send to API
+      const response = await fetch('https://trkmuc.app.n8n.cloud/webhook-test/12345', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(genogramData)
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Genogramm erfolgreich erstellt!",
+          description: "Ihr Genogramm wurde generiert und gesendet.",
+        });
+      } else {
+        throw new Error('API call failed');
+      }
+
+    } catch (error) {
+      console.error('Error generating genogram:', error);
+      toast({
+        title: "Fehler beim Erstellen",
+        description: "Das Genogramm konnte nicht erstellt werden. Bitte versuchen Sie es erneut.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -188,6 +319,27 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
 
             {/* Render all added people */}
             {people.map(person => renderPersonSymbol(person))}
+          </div>
+
+          {/* Generate Genogram Button */}
+          <div className="mt-8 flex justify-center">
+            <Button
+              onClick={generateGenogramData}
+              disabled={isGenerating}
+              size="lg"
+              className="bg-green-600 hover:bg-green-700 text-white h-14 px-8 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-3 animate-spin" />
+                  Genogramm wird erstellt...
+                </>
+              ) : (
+                <>
+                  Genogramm erstellen & visualisieren
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
