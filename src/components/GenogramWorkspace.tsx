@@ -65,6 +65,8 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         name: personalInfo.name,
         gender: personalInfo.gender === 'male' ? 'male' : personalInfo.gender === 'female' ? 'female' : 'unknown',
         birthDate: personalInfo.birthDate?.toISOString().split('T')[0] || '',
+        deathDate: undefined,
+        occupation: '',
         isEgo: true,
         maritalStatus: personalInfo.maritalStatus,
         notes: personalInfo.purpose || ''
@@ -89,7 +91,7 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
           name: person.name,
           gender: person.gender === 'male' ? 'male' : person.gender === 'female' ? 'female' : 'unknown',
           birthDate: person.birthDate.toISOString().split('T')[0],
-          deathDate: person.deathDate?.toISOString().split('T')[0],
+          deathDate: person.deathDate?.toISOString().split('T')[0] || undefined,
           occupation: person.occupation || '',
           notes: person.notes || ''
         });
