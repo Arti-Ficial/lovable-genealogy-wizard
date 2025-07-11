@@ -79,43 +79,43 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
   g.setDefaultEdgeLabel(() => ({}));
   g.setDefaultNodeLabel(() => ({}));
   
-  // Add nodes to the graph (filter out dummy nodes for layout)
-  input.nodes.filter(node => !node.isDummy).forEach(node => {
+  // Add nodes to the graph (include dummy nodes for layout calculation)
+  input.nodes.forEach(node => {
     g.setNode(node.id, {
-      label: node.label,
-      width: node.width || 80,
-      height: node.height || 80,
-      shape: node.shape === 'square' ? 'rect' : 'circle'
+      label: node.isDummy ? '' : node.label,
+      width: node.isDummy ? 1 : (node.width || 80),
+      height: node.isDummy ? 1 : (node.height || 80),
+      shape: node.isDummy ? 'rect' : (node.shape === 'square' ? 'rect' : 'circle')
     });
   });
   
-  // Add edges to the graph (only between non-dummy nodes)
+  // Add edges to the graph
   input.edges.forEach(edge => {
-    const fromNode = input.nodes.find(n => n.id === edge.from);
-    const toNode = input.nodes.find(n => n.id === edge.to);
-    
-    if (fromNode && toNode && !fromNode.isDummy && !toNode.isDummy) {
-      g.setEdge(edge.from, edge.to, { type: edge.type || 'default' });
-    }
+    g.setEdge(edge.from, edge.to, { type: edge.type || 'default' });
   });
   
   // Calculate layout
   dagre.layout(g);
   
-  // Extract nodes with calculated positions
-  const nodes = g.nodes().map(nodeId => {
-    const node = g.node(nodeId);
-    const originalNode = input.nodes.find(n => n.id === nodeId);
-    
-    return {
-      id: nodeId,
-      name: node.label,
-      shape: node.shape as 'circle' | 'rect',
-      x: node.x,
-      y: node.y,
-      isEgo: originalNode?.isEgo || false
-    };
-  });
+  // Extract nodes with calculated positions (filter out dummy nodes from final result)
+  const nodes = g.nodes()
+    .filter(nodeId => {
+      const originalNode = input.nodes.find(n => n.id === nodeId);
+      return originalNode && !originalNode.isDummy;
+    })
+    .map(nodeId => {
+      const node = g.node(nodeId);
+      const originalNode = input.nodes.find(n => n.id === nodeId);
+      
+      return {
+        id: nodeId,
+        name: node.label,
+        shape: node.shape as 'circle' | 'rect',
+        x: node.x,
+        y: node.y,
+        isEgo: originalNode?.isEgo || false
+      };
+    });
   
   // Extract edges with calculated positions
   const lines = g.edges().map(edgeId => {
