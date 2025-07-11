@@ -27,6 +27,23 @@ export type GenogramInput = {
   }>;
 };
 
+export type GenogramBackendData = {
+  nodes: Array<{
+    id: string;
+    label: string;
+    width?: number;
+    height?: number;
+    shape: string;
+    isEgo?: boolean;
+    isDummy?: boolean;
+  }>;
+  edges: Array<{
+    from: string;
+    to: string;
+    type?: string;
+  }>;
+};
+
 export type GenogramLayoutResult = {
   nodes: Array<{
     id: string;
@@ -44,6 +61,80 @@ export type GenogramLayoutResult = {
     type: string;
   }>;
 };
+
+export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): GenogramLayoutResult {
+  // Create a new directed graph
+  const g = new dagre.graphlib.Graph();
+  
+  // Set graph attributes
+  g.setGraph({
+    rankdir: 'TB', // Top to bottom layout
+    nodesep: 100,  // Horizontal spacing between nodes
+    ranksep: 120,  // Vertical spacing between ranks
+    marginx: 50,
+    marginy: 50
+  });
+  
+  // Set default edge and node attributes
+  g.setDefaultEdgeLabel(() => ({}));
+  g.setDefaultNodeLabel(() => ({}));
+  
+  // Add nodes to the graph (filter out dummy nodes for layout)
+  input.nodes.filter(node => !node.isDummy).forEach(node => {
+    g.setNode(node.id, {
+      label: node.label,
+      width: node.width || 80,
+      height: node.height || 80,
+      shape: node.shape === 'square' ? 'rect' : 'circle'
+    });
+  });
+  
+  // Add edges to the graph (only between non-dummy nodes)
+  input.edges.forEach(edge => {
+    const fromNode = input.nodes.find(n => n.id === edge.from);
+    const toNode = input.nodes.find(n => n.id === edge.to);
+    
+    if (fromNode && toNode && !fromNode.isDummy && !toNode.isDummy) {
+      g.setEdge(edge.from, edge.to, { type: edge.type || 'default' });
+    }
+  });
+  
+  // Calculate layout
+  dagre.layout(g);
+  
+  // Extract nodes with calculated positions
+  const nodes = g.nodes().map(nodeId => {
+    const node = g.node(nodeId);
+    const originalNode = input.nodes.find(n => n.id === nodeId);
+    
+    return {
+      id: nodeId,
+      name: node.label,
+      shape: node.shape as 'circle' | 'rect',
+      x: node.x,
+      y: node.y,
+      isEgo: originalNode?.isEgo || false
+    };
+  });
+  
+  // Extract edges with calculated positions
+  const lines = g.edges().map(edgeId => {
+    const edge = g.edge(edgeId);
+    const sourceNode = g.node(edgeId.v);
+    const targetNode = g.node(edgeId.w);
+    
+    // Calculate line positions from node centers
+    return {
+      fromX: sourceNode.x,
+      fromY: sourceNode.y,
+      toX: targetNode.x,
+      toY: targetNode.y,
+      type: edge.type || 'default'
+    };
+  });
+  
+  return { nodes, lines };
+}
 
 export function calculateGenogramLayout(input: GenogramInput): GenogramLayoutResult {
   // Create a new directed graph

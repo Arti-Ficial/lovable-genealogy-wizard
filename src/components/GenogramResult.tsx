@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RotateCcw } from 'lucide-react';
 import FamilyIcon from './FamilyIcon';
 import SimpleGenogramRenderer from './SimpleGenogramRenderer';
-import { calculateGenogramLayout, type GenogramInput, type GenogramLayoutResult } from '@/lib/dagre-layout';
+import { calculateGenogramLayout, calculateGenogramLayoutFromBackend, type GenogramInput, type GenogramBackendData, type GenogramLayoutResult } from '@/lib/dagre-layout';
 
 // Function to process genogram data using dagre layout
 function processGenogramData(inputData: GenogramInput): GenogramLayoutResult {
@@ -14,8 +14,16 @@ function processGenogramData(inputData: GenogramInput): GenogramLayoutResult {
   return result;
 }
 
+// Function to process backend genogram data using dagre layout
+function processBackendGenogramData(inputData: GenogramBackendData): GenogramLayoutResult {
+  console.log('Processing backend genogram data with dagre:', inputData);
+  const result = calculateGenogramLayoutFromBackend(inputData);
+  console.log('Backend dagre layout result:', result);
+  return result;
+}
+
 type GenogramResultProps = {
-  genogramData?: GenogramLayoutResult | GenogramInput | null;
+  genogramData?: GenogramLayoutResult | GenogramInput | GenogramBackendData | null;
   mermaidCode?: string;
   onReset: () => void;
 };
@@ -27,14 +35,26 @@ const GenogramResult = ({ genogramData, mermaidCode, onReset }: GenogramResultPr
   let dataToRender: GenogramLayoutResult;
   
   if (genogramData) {
-    // Check if it's already processed layout data or raw input data
+    // Check if it's already processed layout data
     if ('nodes' in genogramData && 'lines' in genogramData && 
         genogramData.nodes.every(n => 'x' in n && 'y' in n)) {
       // Already processed layout data
       dataToRender = genogramData as GenogramLayoutResult;
-    } else {
-      // Raw input data - process with dagre
+    }
+    // Check if it's backend data format with nodes and edges
+    else if ('nodes' in genogramData && 'edges' in genogramData) {
+      // Backend data format - process with dagre
+      dataToRender = processBackendGenogramData(genogramData as GenogramBackendData);
+    }
+    // Check if it's old format with persons and relationships
+    else if ('persons' in genogramData && 'relationships' in genogramData) {
+      // Old input data format - process with dagre
       dataToRender = processGenogramData(genogramData as GenogramInput);
+    }
+    else {
+      // Unknown format - create empty layout result
+      console.warn('Unknown genogram data format:', genogramData);
+      dataToRender = { nodes: [], lines: [] };
     }
   } else {
     // No data available
