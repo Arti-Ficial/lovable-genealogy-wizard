@@ -67,9 +67,9 @@ const GenogramResult = ({ mermaidCode, onReset }: GenogramResultProps) => {
           // Additional processing to ensure shapes are rendered correctly
           const svgElement = element.querySelector('svg');
           if (svgElement) {
-            // Force browser to re-parse and apply all styles
+            // Force browser to re-parse and apply all styles using getBBox which works for SVG
             svgElement.style.display = 'none';
-            svgElement.offsetHeight; // trigger reflow
+            svgElement.getBBox(); // trigger reflow for SVG elements
             svgElement.style.display = '';
             
             // Add custom CSS to ensure circle shapes are rendered
