@@ -54,6 +54,33 @@ const SimpleGenogramRenderer = ({ data }: SimpleGenogramRendererProps) => {
     toY: line.toY - minY
   }));
 
+  // Function to create orthogonal paths
+  const createOrthogonalPath = (line: any) => {
+    const { fromX, fromY, toX, toY, type } = line;
+    
+    // For partnership lines (horizontal connections on same level)
+    if (Math.abs(fromY - toY) < 10 && type === 'partner') {
+      return `M ${fromX} ${fromY} L ${toX} ${toY}`;
+    }
+    
+    // For parent-child relationships (vertical connections with orthogonal routing)
+    if (type === 'parent-child' || Math.abs(fromY - toY) > 10) {
+      const midY = fromY + (toY - fromY) / 2;
+      return `M ${fromX} ${fromY} L ${fromX} ${midY} L ${toX} ${midY} L ${toX} ${toY}`;
+    }
+    
+    // Default orthogonal routing for other connections
+    if (Math.abs(fromX - toX) > Math.abs(fromY - toY)) {
+      // Horizontal routing
+      const midX = fromX + (toX - fromX) / 2;
+      return `M ${fromX} ${fromY} L ${midX} ${fromY} L ${midX} ${toY} L ${toX} ${toY}`;
+    } else {
+      // Vertical routing
+      const midY = fromY + (toY - fromY) / 2;
+      return `M ${fromX} ${fromY} L ${fromX} ${midY} L ${toX} ${midY} L ${toX} ${toY}`;
+    }
+  };
+
   const PersonNode = ({ node }: { node: GenogramNode }) => {
     const size = 80;
     const halfSize = size / 2;
@@ -107,14 +134,12 @@ const SimpleGenogramRenderer = ({ data }: SimpleGenogramRendererProps) => {
       >
         {/* Render all lines first (behind nodes) */}
         {adjustedLines.map((line, index) => (
-          <line
+          <path
             key={`line-${index}`}
-            x1={line.fromX}
-            y1={line.fromY}
-            x2={line.toX}
-            y2={line.toY}
+            d={createOrthogonalPath(line)}
             stroke="#6b7280"
             strokeWidth="2"
+            fill="none"
           />
         ))}
         
