@@ -438,7 +438,7 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
   return (
     <div className="w-full h-full flex items-center justify-center">
       <svg width={svgWidth} height={svgHeight} className="border rounded-lg bg-white">
-        {/* Render family connections */}
+        {/* Render ONLY our custom family connections - NO direct connections */}
         <FamilyConnections />
         
         {/* Render people nodes */}
