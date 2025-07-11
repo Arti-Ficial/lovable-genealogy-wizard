@@ -182,7 +182,10 @@ const GenogramWizard = () => {
   };
 
   const handleRelationshipSave = (status: RelationshipStatus) => {
-    console.log('Saving relationship status:', status, 'for relationship:', selectedRelationship);
+    console.log('=== SAVING RELATIONSHIP STATUS ===');
+    console.log('Status:', status);
+    console.log('Selected relationship:', selectedRelationship);
+    console.log('Current genogramData before update:', genogramData);
     
     if (selectedRelationship && genogramData) {
       // Update the genogram data with the new relationship status
@@ -190,16 +193,26 @@ const GenogramWizard = () => {
       
       // Handle both backend format and dagre format
       if (updatedGenogramData.lines) {
+        console.log('Updating lines array...');
+        console.log('Lines before update:', updatedGenogramData.lines);
+        
         // Dagre format - update the lines array
         updatedGenogramData.lines = updatedGenogramData.lines.map((line: any) => {
-          if (line.id === selectedRelationship.lineId || 
+          const isTargetLine = line.id === selectedRelationship.lineId || 
               (line.fromId === selectedRelationship.fromId && line.toId === selectedRelationship.toId) ||
-              (line.fromId === selectedRelationship.toId && line.toId === selectedRelationship.fromId)) {
+              (line.fromId === selectedRelationship.toId && line.toId === selectedRelationship.fromId);
+          
+          if (isTargetLine) {
+            console.log('Found matching line to update:', line);
             return { ...line, relationshipStatus: status };
           }
           return line;
         });
+        
+        console.log('Lines after update:', updatedGenogramData.lines);
       } else if (updatedGenogramData.relationships) {
+        console.log('Updating relationships array...');
+        
         // Original input format - update the relationships array
         updatedGenogramData.relationships = updatedGenogramData.relationships.map((rel: any) => {
           const fromId = `person-${rel.from}`;
@@ -212,6 +225,7 @@ const GenogramWizard = () => {
         });
       }
       
+      console.log('Updated genogramData:', updatedGenogramData);
       setGenogramData(updatedGenogramData);
       
       toast({
