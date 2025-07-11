@@ -80,14 +80,23 @@ const GenogramWizard = () => {
         const result = await response.json();
         console.log('API response received:', result);
         
+        // Check if we received genogramData (new processed format) or raw input data
         if (result.genogramData) {
-          // Neue Format mit GenogramData
           console.log('Using genogramData from API response');
           setGenogramData(result.genogramData);
           setCurrentStep('result');
           toast({
             title: "Standardfamilie erfolgreich geladen!",
             description: "Das Test-Genogramm wurde vom Server generiert und wird angezeigt.",
+          });
+        } else if (result.persons && result.relationships) {
+          // Received raw input data - pass it directly to GenogramResult for dagre processing
+          console.log('Using raw input data from API response for dagre processing');
+          setGenogramData(result);
+          setCurrentStep('result');
+          toast({
+            title: "Standardfamilie erfolgreich geladen!",
+            description: "Das Test-Genogramm wurde mit dagre-Layout berechnet und wird angezeigt.",
           });
         } else if (result.mermaidCode) {
           // Fallback für altes Format

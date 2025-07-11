@@ -1,59 +1,57 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RotateCcw } from 'lucide-react';
 import FamilyIcon from './FamilyIcon';
 import SimpleGenogramRenderer from './SimpleGenogramRenderer';
+import { calculateGenogramLayout, type GenogramInput, type GenogramLayoutResult } from '@/lib/dagre-layout';
 
-// Temporary conversion function until backend sends new format
-const convertMermaidToGenogramData = (mermaidCode: string) => {
-  // For now, create mock data that matches the expected layout
-  // This will be replaced when backend sends the new format
-  return {
-    nodes: [
-      { id: '1', name: 'Georg', shape: 'rect' as const, x: 200, y: 100 },
-      { id: '2', name: 'Helga', shape: 'circle' as const, x: 100, y: 100 },
-      { id: '3', name: 'Peter', shape: 'rect' as const, x: 400, y: 100 },
-      { id: '4', name: 'Maria', shape: 'circle' as const, x: 500, y: 100 },
-      { id: '5', name: 'Sabine', shape: 'circle' as const, x: 600, y: 100 },
-      { id: '6', name: 'Andreas', shape: 'rect' as const, x: 1000, y: 100 },
-      { id: '7', name: 'Julia', shape: 'circle' as const, x: 1100, y: 100 }
-    ],
-    lines: [
-      { fromX: 100, fromY: 100, toX: 200, toY: 100 }, // Helga --- Georg
-      { fromX: 400, fromY: 100, toX: 500, toY: 100 }, // Peter --- Maria
-      { fromX: 1000, fromY: 100, toX: 1100, toY: 100 } // Andreas --- Julia
-    ]
-  };
-};
-
-type GenogramData = {
-  nodes: Array<{
-    id: string;
-    name: string;
-    shape: 'circle' | 'rect';
-    x: number;
-    y: number;
-  }>;
-  lines: Array<{
-    fromX: number;
-    fromY: number;
-    toX: number;
-    toY: number;
-  }>;
-};
+// Function to process genogram data using dagre layout
+function processGenogramData(inputData: GenogramInput): GenogramLayoutResult {
+  console.log('Processing genogram data with dagre:', inputData);
+  const result = calculateGenogramLayout(inputData);
+  console.log('Dagre layout result:', result);
+  return result;
+}
 
 type GenogramResultProps = {
-  genogramData?: GenogramData;
-  mermaidCode?: string; // Temporary backward compatibility
+  genogramData?: GenogramLayoutResult | GenogramInput | null;
+  mermaidCode?: string;
   onReset: () => void;
 };
 
 const GenogramResult = ({ genogramData, mermaidCode, onReset }: GenogramResultProps) => {
-  // Use provided genogramData or convert from mermaidCode (temporary)
-  const data = genogramData || (mermaidCode ? convertMermaidToGenogramData(mermaidCode) : { nodes: [], lines: [] });
-  console.log('Rendering genogram with data:', data);
+  console.log('Rendering genogram with data:', genogramData);
+  
+  // Determine which data to use and process it
+  let dataToRender: GenogramLayoutResult;
+  
+  if (genogramData) {
+    // Check if it's already processed layout data or raw input data
+    if ('nodes' in genogramData && 'lines' in genogramData && 
+        genogramData.nodes.every(n => 'x' in n && 'y' in n)) {
+      // Already processed layout data
+      dataToRender = genogramData as GenogramLayoutResult;
+    } else {
+      // Raw input data - process with dagre
+      dataToRender = processGenogramData(genogramData as GenogramInput);
+    }
+  } else {
+    // No data available
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-6xl mx-auto shadow-xl">
+          <CardContent className="text-center space-y-4 pt-6">
+            <h2 className="text-2xl font-bold text-gray-900">Keine Daten verfügbar</h2>
+            <p className="text-gray-600">Es wurden keine Genogramm-Daten empfangen.</p>
+            <Button onClick={onReset} variant="outline">
+              Zurück zum Start
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
@@ -69,7 +67,7 @@ const GenogramResult = ({ genogramData, mermaidCode, onReset }: GenogramResultPr
         
         <CardContent>
           <div className="bg-white rounded-lg border p-6 mb-6 min-h-[500px] flex items-center justify-center overflow-auto">
-            <SimpleGenogramRenderer data={data} />
+            <SimpleGenogramRenderer data={dataToRender} />
           </div>
 
           <div className="flex justify-center">

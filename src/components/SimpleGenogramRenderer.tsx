@@ -3,9 +3,10 @@ import React from 'react';
 type GenogramNode = {
   id: string;
   name: string;
-  shape: 'circle' | 'rect';
+  shape: 'circle' | 'rect' | 'square';
   x: number;
   y: number;
+  isEgo?: boolean;
 };
 
 type GenogramLine = {
@@ -57,6 +58,7 @@ const SimpleGenogramRenderer = ({ data }: SimpleGenogramRendererProps) => {
     const size = 80;
     const halfSize = size / 2;
     const isCircle = node.shape === 'circle';
+    const isSquare = node.shape === 'rect' || node.shape === 'square';
     
     return (
       <g key={node.id}>
@@ -69,7 +71,7 @@ const SimpleGenogramRenderer = ({ data }: SimpleGenogramRendererProps) => {
             stroke="#ec4899"
             strokeWidth="2"
           />
-        ) : (
+        ) : isSquare ? (
           <rect
             x={node.x - halfSize}
             y={node.y - halfSize}
@@ -79,7 +81,7 @@ const SimpleGenogramRenderer = ({ data }: SimpleGenogramRendererProps) => {
             stroke="#2563eb"
             strokeWidth="2"
           />
-        )}
+        ) : null}
         <text
           x={node.x}
           y={node.y}
