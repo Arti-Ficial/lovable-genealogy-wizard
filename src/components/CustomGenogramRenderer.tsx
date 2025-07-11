@@ -26,8 +26,9 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
     const people: Person[] = [];
     const connections: Connection[] = [];
     const genderMap: { [key: string]: 'male' | 'female' } = {};
+    const invisibleNodes = new Set<string>();
     
-    // Parse style definitions to determine gender
+    // Parse style definitions to determine gender and invisible nodes
     lines.forEach(line => {
       if (line.includes('shape:circle')) {
         const styleMatch = line.match(/style\s+(\w+)\s+shape:circle/);
@@ -35,14 +36,26 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
           genderMap[styleMatch[1]] = 'female';
         }
       }
+      
+      // Detect invisible nodes (usually for partnership midpoints)
+      if (line.includes('fill:none,stroke:none')) {
+        const invisibleMatch = line.match(/style\s+(\w+)\s+fill:none,stroke:none/);
+        if (invisibleMatch) {
+          invisibleNodes.add(invisibleMatch[1]);
+        }
+      }
     });
     
-    // Parse nodes
+    // Parse visible people nodes
     lines.forEach(line => {
-      const nodeMatch = line.match(/(\w+)\[([^\]]+)\]/);
+      const nodeMatch = line.match(/(\w+)\[([^\]]+)\]|\w+\(([^)]+)\)/);
       if (nodeMatch) {
-        const id = nodeMatch[1];
-        const name = nodeMatch[2];
+        const id = nodeMatch[1] || line.match(/(\w+)\(/)?.[1];
+        const name = nodeMatch[2] || nodeMatch[3];
+        
+        // Skip invisible nodes
+        if (!id || invisibleNodes.has(id)) return;
+        
         const gender = genderMap[id] || 'male';
         
         people.push({
@@ -55,79 +68,110 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
       }
     });
     
-    // Parse connections
+    // Parse connections - handle chains like p1 --- p1_2 --- p2
     lines.forEach(line => {
-      // Partner relationships (---)
-      const partnerMatch = line.match(/(\w+)\s*---\s*(\w+)/);
-      if (partnerMatch) {
-        const from = partnerMatch[1];
-        const to = partnerMatch[2];
-        connections.push({
-          from,
-          to,
-          type: 'partner'
-        });
-      }
-      
-      // Parent-child relationships (-->)
-      const parentChildMatch = line.match(/(\w+)\s*-->\s*(\w+)/);
-      if (parentChildMatch) {
-        const from = parentChildMatch[1];
-        const to = parentChildMatch[2];
-        connections.push({
-          from,
-          to,
-          type: 'parent-child'
-        });
-      }
-    });
-    
-    // Create hierarchical layout
-    const layoutPeople = (people: Person[], connections: Connection[]) => {
-      // Create adjacency lists for parent-child relationships
-      const childrenOf: { [key: string]: string[] } = {};
-      const parentsOf: { [key: string]: string[] } = {};
-      
-      connections.forEach(conn => {
-        if (conn.type === 'parent-child') {
-          if (!childrenOf[conn.from]) childrenOf[conn.from] = [];
-          if (!parentsOf[conn.to]) parentsOf[conn.to] = [];
-          
-          childrenOf[conn.from].push(conn.to);
-          parentsOf[conn.to].push(conn.from);
-        }
-      });
-      
-      const generations: { [key: string]: number } = {};
-      const visited = new Set<string>();
-      
-      const roots = people.filter(person => !parentsOf[person.id] || parentsOf[person.id].length === 0);
-      
-      if (roots.length === 0 && people.length > 0) {
-        roots.push(people[0]);
-      }
-      
-      const queue: { id: string; generation: number }[] = [];
-      roots.forEach(root => {
-        generations[root.id] = 0;
-        queue.push({ id: root.id, generation: 0 });
-        visited.add(root.id);
-      });
-      
-      while (queue.length > 0) {
-        const { id, generation } = queue.shift()!;
+      // Handle partnership chains: p1 --- invisible --- p2
+      const chainMatch = line.match(/(\w+)\s*---\s*(\w+)\s*---\s*(\w+)/);
+      if (chainMatch) {
+        const person1 = chainMatch[1];
+        const invisible = chainMatch[2];
+        const person2 = chainMatch[3];
         
-        if (childrenOf[id]) {
-          childrenOf[id].forEach(childId => {
-            if (!visited.has(childId)) {
-              generations[childId] = generation + 1;
-              queue.push({ id: childId, generation: generation + 1 });
-              visited.add(childId);
-            }
+        // If middle node is invisible, create direct partnership
+        if (invisibleNodes.has(invisible)) {
+          connections.push({
+            from: person1,
+            to: person2,
+            type: 'partner'
+          });
+          
+          // Store the invisible node for parent-child connections
+          connections.push({
+            from: invisible,
+            to: 'MIDPOINT',
+            type: 'partner'
           });
         }
       }
       
+      // Handle direct partnerships
+      const partnerMatch = line.match(/^(\w+)\s*---\s*(\w+)$/);
+      if (partnerMatch && !line.includes('---') || line.split('---').length === 2) {
+        const from = partnerMatch[1];
+        const to = partnerMatch[2];
+        
+        // Only add if both are visible people
+        if (!invisibleNodes.has(from) && !invisibleNodes.has(to)) {
+          connections.push({
+            from,
+            to,
+            type: 'partner'
+          });
+        }
+      }
+      
+      // Parent-child relationships (invisible --> child)
+      const parentChildMatch = line.match(/(\w+)\s*-->\s*(\w+)/);
+      if (parentChildMatch) {
+        const from = parentChildMatch[1];
+        const to = parentChildMatch[2];
+        
+        // If parent is invisible, it represents a partnership
+        if (invisibleNodes.has(from)) {
+          connections.push({
+            from: from,
+            to: to,
+            type: 'parent-child'
+          });
+        } else {
+          connections.push({
+            from,
+            to,
+            type: 'parent-child'
+          });
+        }
+      }
+    });
+    
+    // Create hierarchical layout with special handling for partner arrangements
+    const layoutPeople = (people: Person[], connections: Connection[]) => {
+      // Find generations based on invisible parent-child relationships
+      const generations: { [key: string]: number } = {};
+      const invisibleToChildren: { [key: string]: string[] } = {};
+      
+      // First pass: collect invisible parent connections
+      connections.forEach(conn => {
+        if (conn.type === 'parent-child') {
+          const isInvisibleParent = conn.from.includes('_') || !people.find(p => p.id === conn.from);
+          if (isInvisibleParent) {
+            if (!invisibleToChildren[conn.from]) invisibleToChildren[conn.from] = [];
+            invisibleToChildren[conn.from].push(conn.to);
+          }
+        }
+      });
+      
+      // Assign generations starting from people with no invisible parents
+      const hasInvisibleParent = new Set<string>();
+      Object.values(invisibleToChildren).flat().forEach(childId => {
+        hasInvisibleParent.add(childId);
+      });
+      
+      // Find root generation (no invisible parents)
+      people.forEach(person => {
+        if (!hasInvisibleParent.has(person.id)) {
+          generations[person.id] = 0; // Root generation
+        }
+      });
+      
+      // Set children generation
+      Object.values(invisibleToChildren).flat().forEach(childId => {
+        const child = people.find(p => p.id === childId);
+        if (child) {
+          generations[child.id] = 1; // Children are generation 1
+        }
+      });
+      
+      // Handle any remaining people without generations
       people.forEach(person => {
         if (generations[person.id] === undefined) {
           generations[person.id] = 0;
@@ -142,22 +186,73 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
       });
       
       const startY = 100;
-      const generationSpacing = 150;
-      const personSpacing = 180;
+      const generationSpacing = 180;
       const svgWidth = 800;
       
+      // Position each generation
       Object.keys(generationGroups).forEach(genKey => {
         const gen = parseInt(genKey);
         const genPeople = generationGroups[gen];
         const genY = startY + (gen * generationSpacing);
         
-        const totalWidth = (genPeople.length - 1) * personSpacing;
-        const startX = (svgWidth - totalWidth) / 2;
-        
-        genPeople.forEach((person, index) => {
-          person.x = startX + (index * personSpacing);
-          person.y = genY;
-        });
+        if (gen === 0) {
+          // For root generation, arrange partners side by side
+          const partnerPairs: Person[][] = [];
+          const processedPeople = new Set<string>();
+          
+          // Group partners together
+          connections.forEach(conn => {
+            if (conn.type === 'partner') {
+              const person1 = genPeople.find(p => p.id === conn.from);
+              const person2 = genPeople.find(p => p.id === conn.to);
+              
+              if (person1 && person2 && !processedPeople.has(person1.id) && !processedPeople.has(person2.id)) {
+                partnerPairs.push([person1, person2]);
+                processedPeople.add(person1.id);
+                processedPeople.add(person2.id);
+              }
+            }
+          });
+          
+          // Add singles
+          genPeople.forEach(person => {
+            if (!processedPeople.has(person.id)) {
+              partnerPairs.push([person]);
+            }
+          });
+          
+          // Position partner pairs
+          const pairSpacing = 200;
+          const partnerSpacing = 80;
+          const totalPairWidth = (partnerPairs.length - 1) * pairSpacing;
+          const startX = (svgWidth - totalPairWidth) / 2;
+          
+          partnerPairs.forEach((pair, pairIndex) => {
+            const pairCenterX = startX + (pairIndex * pairSpacing);
+            
+            if (pair.length === 2) {
+              // Partner pair
+              pair[0].x = pairCenterX - partnerSpacing / 2;
+              pair[0].y = genY;
+              pair[1].x = pairCenterX + partnerSpacing / 2;
+              pair[1].y = genY;
+            } else {
+              // Single person
+              pair[0].x = pairCenterX;
+              pair[0].y = genY;
+            }
+          });
+        } else {
+          // For other generations, simple horizontal arrangement
+          const personSpacing = 120;
+          const totalWidth = (genPeople.length - 1) * personSpacing;
+          const startX = (svgWidth - totalWidth) / 2;
+          
+          genPeople.forEach((person, index) => {
+            person.x = startX + (index * personSpacing);
+            person.y = genY;
+          });
+        }
       });
       
       return people.map(person => {
@@ -176,29 +271,83 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
   const identifyFamilyStructures = (people: Person[], connections: Connection[]) => {
     const childrenOf: { [key: string]: string[] } = {};
     const parentsOf: { [key: string]: string[] } = {};
+    const invisibleToChildren: { [key: string]: string[] } = {};
     
+    // Process all connections
     connections.forEach(conn => {
       if (conn.type === 'parent-child') {
-        if (!childrenOf[conn.from]) childrenOf[conn.from] = [];
-        if (!parentsOf[conn.to]) parentsOf[conn.to] = [];
+        // Check if parent is an invisible node (partnership midpoint)
+        const isInvisibleParent = conn.from.includes('_') || !people.find(p => p.id === conn.from);
         
-        childrenOf[conn.from].push(conn.to);
-        parentsOf[conn.to].push(conn.from);
+        if (isInvisibleParent) {
+          // Store children of invisible partnership nodes
+          if (!invisibleToChildren[conn.from]) invisibleToChildren[conn.from] = [];
+          invisibleToChildren[conn.from].push(conn.to);
+          
+          // Also track parents for the child
+          if (!parentsOf[conn.to]) parentsOf[conn.to] = [];
+          parentsOf[conn.to].push(conn.from);
+        } else {
+          // Normal parent-child relationship
+          if (!childrenOf[conn.from]) childrenOf[conn.from] = [];
+          if (!parentsOf[conn.to]) parentsOf[conn.to] = [];
+          
+          childrenOf[conn.from].push(conn.to);
+          parentsOf[conn.to].push(conn.from);
+        }
       }
     });
 
-    // Find partner relationships (people who share children)
+    // Find partner relationships
     const partnerPairs: { parent1: Person; parent2: Person; children: Person[] }[] = [];
     const processedParents = new Set<string>();
 
-    // First identify all partnerships by shared children
+    // First, handle explicit partnerships
+    connections.forEach(conn => {
+      if (conn.type === 'partner') {
+        const person1 = people.find(p => p.id === conn.from);
+        const person2 = people.find(p => p.id === conn.to);
+        
+        if (person1 && person2 && !processedParents.has(person1.id) && !processedParents.has(person2.id)) {
+          // Find their children by looking for invisible partnership nodes
+          const childrenIds: string[] = [];
+          
+          // Look for all possible invisible node patterns that could represent this partnership
+          Object.keys(invisibleToChildren).forEach(invisibleNode => {
+            // Check if this invisible node represents the partnership
+            // It could be p1_2, p1_p2, etc.
+            const hasFirstInitial = invisibleNode.includes(person1.id.charAt(0).toLowerCase()) || invisibleNode.includes(person1.id);
+            const hasSecondInitial = invisibleNode.includes(person2.id.charAt(0).toLowerCase()) || invisibleNode.includes(person2.id);
+            
+            if (hasFirstInitial && hasSecondInitial) {
+              childrenIds.push(...invisibleToChildren[invisibleNode]);
+            }
+          });
+          
+          const childrenPersons = childrenIds.map(childId => people.find(p => p.id === childId)).filter(Boolean) as Person[];
+          
+          // Only create partnership if they have children or if explicitly connected
+          if (childrenPersons.length > 0) {
+            partnerPairs.push({
+              parent1: person1,
+              parent2: person2,
+              children: childrenPersons
+            });
+            
+            processedParents.add(person1.id);
+            processedParents.add(person2.id);
+          }
+        }
+      }
+    });
+
+    // Handle remaining partnerships by shared children
     people.forEach(person => {
       if (processedParents.has(person.id)) return;
       
       const children = childrenOf[person.id] || [];
       if (children.length === 0) return;
 
-      // Find potential partners (other parents of the same children)
       const potentialPartners = people.filter(other => 
         other.id !== person.id && 
         !processedParents.has(other.id) &&
@@ -224,36 +373,11 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
       }
     });
 
-    // Also check for explicit partner relationships in connections
-    connections.forEach(conn => {
-      if (conn.type === 'partner') {
-        const person1 = people.find(p => p.id === conn.from);
-        const person2 = people.find(p => p.id === conn.to);
-        
-        if (person1 && person2 && !processedParents.has(person1.id) && !processedParents.has(person2.id)) {
-          const children1 = childrenOf[person1.id] || [];
-          const children2 = childrenOf[person2.id] || [];
-          const sharedChildren = children1.filter(childId => children2.includes(childId));
-          
-          if (sharedChildren.length > 0) {
-            partnerPairs.push({
-              parent1: person1,
-              parent2: person2,
-              children: sharedChildren.map(childId => people.find(p => p.id === childId)!).filter(Boolean)
-            });
-            
-            processedParents.add(person1.id);
-            processedParents.add(person2.id);
-          }
-        }
-      }
-    });
-
-    return { partnerPairs, childrenOf, parentsOf };
+    return { partnerPairs, childrenOf, parentsOf, invisibleToChildren };
   };
 
   const { people, connections } = parseGenogram(mermaidCode);
-  const { partnerPairs, childrenOf } = identifyFamilyStructures(people, connections);
+  const { partnerPairs, childrenOf, invisibleToChildren } = identifyFamilyStructures(people, connections);
   
   const PersonNode = ({ person }: { person: Person }) => {
     const isCircle = person.gender === 'female';
