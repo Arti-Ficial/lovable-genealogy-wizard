@@ -134,14 +134,32 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
     const targetNode = g.node(edgeId.w);
     const originalEdge = input.edges.find(e => e.from === edgeId.v && e.to === edgeId.w);
     
+    // Determine if this is a partnership line based on dummy nodes
+    const isDummyPartnerConnection = edgeId.v.startsWith('partner-') || edgeId.w.startsWith('partner-');
+    const isPartnershipLine = isDummyPartnerConnection && 
+      (!edgeId.v.startsWith('person-') || !edgeId.w.startsWith('person-'));
+    
+    // For lines connecting two persons via a partner dummy node, mark as partner type
+    let lineType = edge.type || 'default';
+    if (isDummyPartnerConnection) {
+      // Check if both source and target are person nodes (not dummy nodes)
+      const sourceIsPerson = edgeId.v.startsWith('person-');
+      const targetIsPerson = edgeId.w.startsWith('person-');
+      if (sourceIsPerson && !targetIsPerson && edgeId.w.startsWith('partner-')) {
+        lineType = 'partner';
+      } else if (!sourceIsPerson && targetIsPerson && edgeId.v.startsWith('partner-')) {
+        lineType = 'parent-child';
+      }
+    }
+    
     // Calculate line positions from node centers
     return {
       fromX: sourceNode.x,
       fromY: sourceNode.y,
       toX: targetNode.x,
       toY: targetNode.y,
-      type: edge.type || 'default',
-      relationshipStatus: originalEdge?.relationshipStatus,
+      type: lineType,
+      relationshipStatus: originalEdge?.relationshipStatus || 'married',
       id: `${edgeId.v}-${edgeId.w}`,
       fromId: edgeId.v,
       toId: edgeId.w
