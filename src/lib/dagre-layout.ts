@@ -161,8 +161,6 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
           relationshipStatus = partnershipEdges[0].relationshipStatus;
         }
         
-        console.log(`Creating partnership line for ${edgeId.v} - ${otherEdge.v} with status: ${relationshipStatus}`);
-        
         const partnershipLine = {
           fromX: sourceNode.x,
           fromY: sourceNode.y,

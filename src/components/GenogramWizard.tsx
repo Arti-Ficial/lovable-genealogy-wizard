@@ -182,20 +182,12 @@ const GenogramWizard = () => {
   };
 
   const handleRelationshipSave = (status: RelationshipStatus) => {
-    console.log('=== SAVING RELATIONSHIP STATUS ===');
-    console.log('Status:', status);
-    console.log('Selected relationship:', selectedRelationship);
-    console.log('Current genogramData before update:', genogramData);
-    
     if (selectedRelationship && genogramData) {
       // Update the genogram data with the new relationship status
       const updatedGenogramData = { ...genogramData };
       
       // Handle both backend format and dagre format
       if (updatedGenogramData.lines) {
-        console.log('Updating lines array...');
-        console.log('Lines before update:', updatedGenogramData.lines);
-        
         // Dagre format - update the lines array
         updatedGenogramData.lines = updatedGenogramData.lines.map((line: any) => {
           const isTargetLine = line.id === selectedRelationship.lineId || 
@@ -203,19 +195,12 @@ const GenogramWizard = () => {
               (line.fromId === selectedRelationship.toId && line.toId === selectedRelationship.fromId);
           
           if (isTargetLine) {
-            console.log('Found matching line to update:', line);
             return { ...line, relationshipStatus: status };
           }
           return line;
         });
-        
-        console.log('Lines after update:', updatedGenogramData.lines);
       } else if (updatedGenogramData.edges) {
-        console.log('Updating backend edges array...');
-        console.log('Edges before update:', updatedGenogramData.edges);
-        
         // Backend format - update the edges array by adding relationshipStatus to partnership edges
-        // We need to find the dummy node that connects the two partners
         const dummyNodeId = `partner-${selectedRelationship.fromId.replace('person-', '')}-${selectedRelationship.toId.replace('person-', '')}`;
         const reverseDummyNodeId = `partner-${selectedRelationship.toId.replace('person-', '')}-${selectedRelationship.fromId.replace('person-', '')}`;
         
@@ -223,16 +208,11 @@ const GenogramWizard = () => {
           // Update edges that connect to the partnership dummy node
           if ((edge.from === selectedRelationship.fromId && (edge.to === dummyNodeId || edge.to === reverseDummyNodeId)) ||
               (edge.from === selectedRelationship.toId && (edge.to === dummyNodeId || edge.to === reverseDummyNodeId))) {
-            console.log('Found matching edge to update:', edge);
             return { ...edge, relationshipStatus: status };
           }
           return edge;
         });
-        
-        console.log('Edges after update:', updatedGenogramData.edges);
       } else if (updatedGenogramData.relationships) {
-        console.log('Updating relationships array...');
-        
         // Original input format - update the relationships array
         updatedGenogramData.relationships = updatedGenogramData.relationships.map((rel: any) => {
           const fromId = `person-${rel.from}`;
@@ -245,7 +225,6 @@ const GenogramWizard = () => {
         });
       }
       
-      console.log('Updated genogramData:', updatedGenogramData);
       setGenogramData(updatedGenogramData);
       
       toast({
