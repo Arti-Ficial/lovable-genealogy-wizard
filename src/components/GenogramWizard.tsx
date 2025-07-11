@@ -35,21 +35,49 @@ const GenogramWizard = () => {
     console.log('Loading test family directly...');
 
     try {
-      // Vordefinierte Standardfamilie - direkt als GenogramData Format
+      // Vordefinierte Standardfamilie - korrektes JSON-Objekt
+      const testFamily = {
+        "persons": [
+          { "id": 1, "name": "Georg", "gender": "male" },
+          { "id": 2, "name": "Helga", "gender": "female" },
+          { "id": 3, "name": "Peter", "gender": "male" },
+          { "id": 4, "name": "Maria", "gender": "female" },
+          { "id": 5, "name": "Sabine", "gender": "female" },
+          { "id": 6, "name": "Andreas", "gender": "male", "isEgo": true },
+          { "id": 7, "name": "Julia", "gender": "female" }
+        ],
+        "relationships": [
+          { "from": 1, "to": 2, "type": "partner" },
+          { "from": 3, "to": 4, "type": "partner" },
+          { "from": 1, "to": 3, "type": "parent-child" },
+          { "from": 2, "to": 3, "type": "parent-child" },
+          { "from": 1, "to": 5, "type": "parent-child" },
+          { "from": 2, "to": 5, "type": "parent-child" },
+          { "from": 3, "to": 6, "type": "parent-child" },
+          { "from": 4, "to": 6, "type": "parent-child" },
+          { "from": 3, "to": 7, "type": "parent-child" },
+          { "from": 4, "to": 7, "type": "parent-child" }
+        ]
+      };
+
+      // Konvertierung zu GenogramData Format für den Renderer
       const testGenogramData = {
         nodes: [
           { id: '1', name: 'Georg', shape: 'rect' as const, x: 200, y: 100 },
           { id: '2', name: 'Helga', shape: 'circle' as const, x: 100, y: 100 },
-          { id: '3', name: 'Peter', shape: 'rect' as const, x: 400, y: 100 },
-          { id: '4', name: 'Maria', shape: 'circle' as const, x: 500, y: 100 },
-          { id: '5', name: 'Sabine', shape: 'circle' as const, x: 600, y: 100 },
-          { id: '6', name: 'Andreas', shape: 'rect' as const, x: 1000, y: 100 },
-          { id: '7', name: 'Julia', shape: 'circle' as const, x: 1100, y: 100 }
+          { id: '3', name: 'Peter', shape: 'rect' as const, x: 400, y: 200 },
+          { id: '4', name: 'Maria', shape: 'circle' as const, x: 500, y: 200 },
+          { id: '5', name: 'Sabine', shape: 'circle' as const, x: 300, y: 200 },
+          { id: '6', name: 'Andreas', shape: 'rect' as const, x: 450, y: 300 },
+          { id: '7', name: 'Julia', shape: 'circle' as const, x: 550, y: 300 }
         ],
         lines: [
           { fromX: 100, fromY: 100, toX: 200, toY: 100 }, // Helga --- Georg
-          { fromX: 400, fromY: 100, toX: 500, toY: 100 }, // Peter --- Maria
-          { fromX: 1000, fromY: 100, toX: 1100, toY: 100 } // Andreas --- Julia
+          { fromX: 400, fromY: 200, toX: 500, toY: 200 }, // Peter --- Maria
+          { fromX: 150, fromY: 150, toX: 350, toY: 200 }, // Georg-Helga zu Sabine
+          { fromX: 150, fromY: 150, toX: 450, toY: 200 }, // Georg-Helga zu Peter
+          { fromX: 450, fromY: 250, toX: 450, toY: 300 }, // Peter-Maria zu Andreas
+          { fromX: 450, fromY: 250, toX: 550, toY: 300 }  // Peter-Maria zu Julia
         ]
       };
 
