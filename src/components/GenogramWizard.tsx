@@ -32,7 +32,7 @@ const GenogramWizard = () => {
 
   const handleLoadTestFamily = async () => {
     setIsLoading(true);
-    console.log('Loading test family directly...');
+    console.log('Loading test family with API call...');
 
     try {
       // Vordefinierte Standardfamilie - korrektes JSON-Objekt
@@ -60,43 +60,68 @@ const GenogramWizard = () => {
         ]
       };
 
-      // Konvertierung zu GenogramData Format für den Renderer
-      const testGenogramData = {
-        nodes: [
-          { id: '1', name: 'Georg', shape: 'rect' as const, x: 200, y: 100 },
-          { id: '2', name: 'Helga', shape: 'circle' as const, x: 100, y: 100 },
-          { id: '3', name: 'Peter', shape: 'rect' as const, x: 400, y: 200 },
-          { id: '4', name: 'Maria', shape: 'circle' as const, x: 500, y: 200 },
-          { id: '5', name: 'Sabine', shape: 'circle' as const, x: 300, y: 200 },
-          { id: '6', name: 'Andreas', shape: 'rect' as const, x: 450, y: 300 },
-          { id: '7', name: 'Julia', shape: 'circle' as const, x: 550, y: 300 }
-        ],
-        lines: [
-          { fromX: 100, fromY: 100, toX: 200, toY: 100 }, // Helga --- Georg
-          { fromX: 400, fromY: 200, toX: 500, toY: 200 }, // Peter --- Maria
-          { fromX: 150, fromY: 150, toX: 350, toY: 200 }, // Georg-Helga zu Sabine
-          { fromX: 150, fromY: 150, toX: 450, toY: 200 }, // Georg-Helga zu Peter
-          { fromX: 450, fromY: 250, toX: 450, toY: 300 }, // Peter-Maria zu Andreas
-          { fromX: 450, fromY: 250, toX: 550, toY: 300 }  // Peter-Maria zu Julia
-        ]
-      };
+      console.log('Sending test family to n8n webhook:', testFamily);
+      console.log('Using webhook URL: https://trkmuc.app.n8n.cloud/webhook-test/12345');
 
-      console.log('Loading predefined genogram data:', testGenogramData);
-      
-      // Direkt zum Ergebnis-Schritt springen mit vordefinierten Daten
-      setGenogramData(testGenogramData);
-      setCurrentStep('result');
-      
-      toast({
-        title: "Standardfamilie erfolgreich geladen!",
-        description: "Das Test-Genogramm wurde direkt geladen und wird angezeigt.",
+      // API-Call zum n8n Webhook mit der korrekten Production URL
+      const response = await fetch('https://trkmuc.app.n8n.cloud/webhook-test/12345', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testFamily)
       });
+
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('API response received:', result);
+        
+        if (result.genogramData) {
+          // Neue Format mit GenogramData
+          console.log('Using genogramData from API response');
+          setGenogramData(result.genogramData);
+          setCurrentStep('result');
+          toast({
+            title: "Standardfamilie erfolgreich geladen!",
+            description: "Das Test-Genogramm wurde vom Server generiert und wird angezeigt.",
+          });
+        } else if (result.mermaidCode) {
+          // Fallback für altes Format
+          console.log('Using mermaidCode from API response (fallback)');
+          setMermaidCode(result.mermaidCode);
+          setCurrentStep('result');
+          toast({
+            title: "Standardfamilie erfolgreich geladen!",
+            description: "Das Test-Genogramm wurde vom Server generiert und wird angezeigt.",
+          });
+        } else {
+          throw new Error('Weder genogramData noch mermaidCode in der API-Antwort erhalten');
+        }
+      } else {
+        const errorText = await response.text();
+        console.error('API response error text:', errorText);
+        throw new Error(`API-Fehler: ${response.status} - ${response.statusText}. Details: ${errorText}`);
+      }
       
     } catch (error) {
-      console.error('Fehler beim Laden der Standardfamilie:', error);
+      console.error('Detaillierter Fehler beim Laden der Standardfamilie:', error);
+      
+      // Spezifische Fehlerbehandlung
+      let errorMessage = "Die Verbindung zum Server konnte nicht hergestellt werden. Bitte versuchen Sie es später erneut.";
+      
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage = "Netzwerkfehler: Die Verbindung zum n8n-Server konnte nicht hergestellt werden. Bitte überprüfen Sie Ihre Internetverbindung.";
+      } else if (error instanceof Error) {
+        errorMessage = `Fehler: ${error.message}`;
+      }
+      
       toast({
-        title: "Fehler",
-        description: "Die Standardfamilie konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
+        title: "Verbindungsfehler",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
