@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
-import { PersonalInfo } from '@/types/genogram';
+import { PersonalInfo, RelationshipStatus } from '@/types/genogram';
 import { useToast } from '@/hooks/use-toast';
 import WelcomeScreen from './WelcomeScreen';
 import PersonalInfoForm from './PersonalInfoForm';
 import GenogramWorkspace from './GenogramWorkspace';
 import GenogramResult from './GenogramResult';
+import RelationshipEditModal from './RelationshipEditModal';
 
 const GenogramWizard = () => {
   const [currentStep, setCurrentStep] = useState<'welcome' | 'personal' | 'workspace' | 'result'>('welcome');
@@ -19,6 +20,12 @@ const GenogramWizard = () => {
   const [mermaidCode, setMermaidCode] = useState<string>('');
   const [genogramData, setGenogramData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
+  const [selectedRelationship, setSelectedRelationship] = useState<{
+    lineId: string;
+    fromId: string;
+    toId: string;
+  } | null>(null);
   const { toast } = useToast();
 
   const handleStartGenogram = () => {
@@ -170,22 +177,66 @@ const GenogramWizard = () => {
 
   const handleRelationshipAction = (lineId: string, fromId: string, toId: string, action: 'edit') => {
     console.log('Relationship action in wizard:', action, 'for line:', lineId);
-    // TODO: Implement relationship editing in wizard mode
+    setSelectedRelationship({ lineId, fromId, toId });
+    setIsRelationshipModalOpen(true);
+  };
+
+  const handleRelationshipSave = (status: RelationshipStatus) => {
+    console.log('Saving relationship status:', status, 'for relationship:', selectedRelationship);
+    // TODO: Update the genogram data with the new relationship status
+    // For now, just show a success message
+    toast({
+      title: "Beziehung aktualisiert",
+      description: `Der Beziehungsstatus wurde auf "${status}" geändert.`,
+    });
+    setIsRelationshipModalOpen(false);
+    setSelectedRelationship(null);
+  };
+
+  // Helper function to get person names from genogram data
+  const getPersonNames = (fromId: string, toId: string) => {
+    if (!genogramData) return { from: fromId, to: toId };
+    
+    // Handle both backend format and dagre format
+    const nodes = genogramData.nodes || (genogramData.persons ? genogramData.persons.map((p: any) => ({ id: `person-${p.id}`, name: p.name })) : []);
+    
+    const fromPerson = nodes.find((node: any) => node.id === fromId);
+    const toPerson = nodes.find((node: any) => node.id === toId);
+    
+    return {
+      from: fromPerson?.name || fromPerson?.label || fromId,
+      to: toPerson?.name || toPerson?.label || toId
+    };
   };
 
   if (currentStep === 'result') {
     return (
-      <GenogramResult 
-        genogramData={genogramData}
-        mermaidCode={mermaidCode}
-        onPersonAction={handlePersonAction}
-        onRelationshipAction={handleRelationshipAction}
-        onReset={() => {
-          setCurrentStep('welcome');
-          setMermaidCode('');
-          setGenogramData(null);
-        }}
-      />
+      <>
+        <GenogramResult 
+          genogramData={genogramData}
+          mermaidCode={mermaidCode}
+          onPersonAction={handlePersonAction}
+          onRelationshipAction={handleRelationshipAction}
+          onReset={() => {
+            setCurrentStep('welcome');
+            setMermaidCode('');
+            setGenogramData(null);
+          }}
+        />
+        
+        {selectedRelationship && (
+          <RelationshipEditModal
+            isOpen={isRelationshipModalOpen}
+            onClose={() => {
+              setIsRelationshipModalOpen(false);
+              setSelectedRelationship(null);
+            }}
+            onSave={handleRelationshipSave}
+            currentStatus="married"
+            personNames={getPersonNames(selectedRelationship.fromId, selectedRelationship.toId)}
+          />
+        )}
+      </>
     );
   }
 

@@ -142,33 +142,10 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
     const isPartnerLine = line.type === 'partner';
     const isClickable = isPartnerLine && !!onRelationshipAction && !!line.fromId && !!line.toId;
     
-    // Enhanced debug logging
-    console.log(`Line ${index}:`, {
-      type: line.type,
-      isPartnerLine,
-      isClickable,
-      hasOnRelationshipAction: !!onRelationshipAction,
-      fromId: line.fromId,
-      toId: line.toId,
-      id: line.id,
-      coords: { fromX: line.fromX, fromY: line.fromY, toX: line.toX, toY: line.toY }
-    });
-    
     const handleLineClick = (e: React.MouseEvent) => {
       e.stopPropagation();
-      console.log('Line clicked! Details:', { 
-        type: line.type,
-        isClickable,
-        fromId: line.fromId,
-        toId: line.toId,
-        hasOnRelationshipAction: !!onRelationshipAction
-      });
-      
       if (isClickable && line.fromId && line.toId) {
-        console.log('Calling onRelationshipAction...');
         onRelationshipAction(line.id || `${line.fromId}-${line.toId}`, line.fromId, line.toId, 'edit');
-      } else {
-        console.log('Line not clickable or missing IDs');
       }
     };
 
