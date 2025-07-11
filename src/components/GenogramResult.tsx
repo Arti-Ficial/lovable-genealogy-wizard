@@ -17,25 +17,36 @@ const GenogramResult = ({ mermaidCode, onReset }: GenogramResultProps) => {
         // Dynamically import mermaid
         const mermaid = (await import('mermaid')).default;
         
-        // Initialize mermaid with correct configuration for shape styling
+        // Initialize mermaid with configuration that supports shape styling
         mermaid.initialize({
           startOnLoad: false,
-          theme: 'default',
+          theme: 'base',
           themeVariables: {
             primaryColor: '#ffffff',
             primaryTextColor: '#000000',
             primaryBorderColor: '#000000',
-            lineColor: '#000000'
+            lineColor: '#000000',
+            background: '#ffffff',
+            mainBkg: '#ffffff',
+            secondBkg: '#ffffff',
+            tertiaryColor: '#ffffff'
           },
           flowchart: {
-            htmlLabels: true,
+            htmlLabels: false,
             curve: 'basis',
             useMaxWidth: true,
-            wrappingWidth: 200
+            wrappingWidth: 200,
+            nodeSpacing: 50,
+            rankSpacing: 50,
+            padding: 20
           },
           fontFamily: 'arial',
           fontSize: 12,
-          logLevel: 'debug'
+          logLevel: 'debug',
+          securityLevel: 'loose',
+          // Enable shape styling
+          deterministicIds: true,
+          deterministicIDSeed: 'genogram'
         });
 
         // Clear any existing content
@@ -48,15 +59,37 @@ const GenogramResult = ({ mermaidCode, onReset }: GenogramResultProps) => {
           // Generate unique ID for this render
           const diagramId = `genogram-${Date.now()}`;
           
-          // Render the mermaid diagram without invalid options
+          // Render the mermaid diagram
           const { svg } = await mermaid.render(diagramId, mermaidCode);
           
           element.innerHTML = svg;
           
-          // Force re-render to ensure styles are applied
-          element.style.display = 'none';
-          element.offsetHeight; // trigger reflow
-          element.style.display = 'block';
+          // Additional processing to ensure shapes are rendered correctly
+          const svgElement = element.querySelector('svg');
+          if (svgElement) {
+            // Force browser to re-parse and apply all styles
+            svgElement.style.display = 'none';
+            svgElement.offsetHeight; // trigger reflow
+            svgElement.style.display = '';
+            
+            // Add custom CSS to ensure circle shapes are rendered
+            const style = document.createElement('style');
+            style.textContent = `
+              .node rect[data-shape="circle"] {
+                rx: 50%;
+                ry: 50%;
+              }
+              .node[data-shape="circle"] rect {
+                rx: 50%;
+                ry: 50%;
+              }
+              .flowchart-label {
+                dominant-baseline: middle;
+                text-anchor: middle;
+              }
+            `;
+            svgElement.appendChild(style);
+          }
         }
       } catch (error) {
         console.error('Error rendering Mermaid diagram:', error);
