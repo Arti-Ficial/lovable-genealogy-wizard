@@ -17,6 +17,7 @@ const GenogramWizard = () => {
     purpose: ''
   });
   const [mermaidCode, setMermaidCode] = useState<string>('');
+  const [genogramData, setGenogramData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -31,62 +32,38 @@ const GenogramWizard = () => {
 
   const handleLoadTestFamily = async () => {
     setIsLoading(true);
-    console.log('Loading test family...');
+    console.log('Loading test family directly...');
 
     try {
-      // Vordefinierte Standardfamilie
-      const testFamily = {
-        "persons": [
-          { "id": 1, "name": "Georg", "gender": "male" },
-          { "id": 2, "name": "Helga", "gender": "female" },
-          { "id": 3, "name": "Peter", "gender": "male" },
-          { "id": 4, "name": "Maria", "gender": "female" },
-          { "id": 5, "name": "Sabine", "gender": "female" },
-          { "id": 6, "name": "Andreas", "gender": "male", "isEgo": true },
-          { "id": 7, "name": "Julia", "gender": "female" }
+      // Vordefinierte Standardfamilie - direkt als GenogramData Format
+      const testGenogramData = {
+        nodes: [
+          { id: '1', name: 'Georg', shape: 'rect' as const, x: 200, y: 100 },
+          { id: '2', name: 'Helga', shape: 'circle' as const, x: 100, y: 100 },
+          { id: '3', name: 'Peter', shape: 'rect' as const, x: 400, y: 100 },
+          { id: '4', name: 'Maria', shape: 'circle' as const, x: 500, y: 100 },
+          { id: '5', name: 'Sabine', shape: 'circle' as const, x: 600, y: 100 },
+          { id: '6', name: 'Andreas', shape: 'rect' as const, x: 1000, y: 100 },
+          { id: '7', name: 'Julia', shape: 'circle' as const, x: 1100, y: 100 }
         ],
-        "relationships": [
-          { "from": 1, "to": 2, "type": "partner" },
-          { "from": 1, "to": 3, "type": "parent-child" },
-          { "from": 2, "to": 3, "type": "parent-child" },
-          { "from": 1, "to": 5, "type": "parent-child" },
-          { "from": 2, "to": 5, "type": "parent-child" },
-          { "from": 3, "to": 4, "type": "partner" },
-          { "from": 3, "to": 6, "type": "parent-child" },
-          { "from": 4, "to": 6, "type": "parent-child" },
-          { "from": 3, "to": 7, "type": "parent-child" },
-          { "from": 4, "to": 7, "type": "parent-child" }
+        lines: [
+          { fromX: 100, fromY: 100, toX: 200, toY: 100 }, // Helga --- Georg
+          { fromX: 400, fromY: 100, toX: 500, toY: 100 }, // Peter --- Maria
+          { fromX: 1000, fromY: 100, toX: 1100, toY: 100 } // Andreas --- Julia
         ]
       };
 
-      console.log('Sending test family to API:', testFamily);
-
-      // API-Call zum n8n Webhook
-      const response = await fetch('https://trkmuc.app.n8n.cloud/webhook-test/12345', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(testFamily)
+      console.log('Loading predefined genogram data:', testGenogramData);
+      
+      // Direkt zum Ergebnis-Schritt springen mit vordefinierten Daten
+      setGenogramData(testGenogramData);
+      setCurrentStep('result');
+      
+      toast({
+        title: "Standardfamilie erfolgreich geladen!",
+        description: "Das Test-Genogramm wurde direkt geladen und wird angezeigt.",
       });
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('API response:', result);
-        
-        if (result.mermaidCode) {
-          setMermaidCode(result.mermaidCode);
-          setCurrentStep('result');
-          toast({
-            title: "Standardfamilie erfolgreich geladen!",
-            description: "Das Test-Genogramm wurde generiert und wird angezeigt.",
-          });
-        } else {
-          throw new Error('Kein Mermaid-Code in der Antwort erhalten');
-        }
-      } else {
-        throw new Error(`API-Fehler: ${response.status}`);
-      }
+      
     } catch (error) {
       console.error('Fehler beim Laden der Standardfamilie:', error);
       toast({
@@ -125,10 +102,12 @@ const GenogramWizard = () => {
   if (currentStep === 'result') {
     return (
       <GenogramResult 
+        genogramData={genogramData}
         mermaidCode={mermaidCode}
         onReset={() => {
           setCurrentStep('welcome');
           setMermaidCode('');
+          setGenogramData(null);
         }}
       />
     );
