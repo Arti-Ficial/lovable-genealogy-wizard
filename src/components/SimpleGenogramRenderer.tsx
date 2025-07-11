@@ -140,7 +140,7 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
   const RelationshipLine = ({ line, index }: { line: GenogramLine; index: number }) => {
     const lineStyle = createRelationshipPath(line);
     const isPartnerLine = line.type === 'partner';
-    const isClickable = isPartnerLine && onRelationshipAction && line.fromId && line.toId;
+    const isClickable = isPartnerLine && !!onRelationshipAction && !!line.fromId && !!line.toId;
     
     // Debug logging for partnership lines
     if (isPartnerLine) {

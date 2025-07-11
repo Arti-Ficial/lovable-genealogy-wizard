@@ -127,43 +127,57 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
       };
     });
   
-  // Extract edges with calculated positions
-  const lines = g.edges().map(edgeId => {
+  // Extract edges with calculated positions and create partnership lines
+  const processedEdges = new Set<string>();
+  const lines: any[] = [];
+  
+  g.edges().forEach(edgeId => {
     const edge = g.edge(edgeId);
     const sourceNode = g.node(edgeId.v);
     const targetNode = g.node(edgeId.w);
     const originalEdge = input.edges.find(e => e.from === edgeId.v && e.to === edgeId.w);
     
-    // Determine if this is a partnership line based on dummy nodes
-    const isDummyPartnerConnection = edgeId.v.startsWith('partner-') || edgeId.w.startsWith('partner-');
-    const isPartnershipLine = isDummyPartnerConnection && 
-      (!edgeId.v.startsWith('person-') || !edgeId.w.startsWith('person-'));
-    
-    // For lines connecting two persons via a partner dummy node, mark as partner type
-    let lineType = edge.type || 'default';
-    if (isDummyPartnerConnection) {
-      // Check if both source and target are person nodes (not dummy nodes)
-      const sourceIsPerson = edgeId.v.startsWith('person-');
-      const targetIsPerson = edgeId.w.startsWith('person-');
-      if (sourceIsPerson && !targetIsPerson && edgeId.w.startsWith('partner-')) {
-        lineType = 'partner';
-      } else if (!sourceIsPerson && targetIsPerson && edgeId.v.startsWith('partner-')) {
-        lineType = 'parent-child';
+    // Check if this is a partnership connection via dummy node
+    if (edgeId.w.startsWith('partner-') && edgeId.v.startsWith('person-')) {
+      const dummyNodeId = edgeId.w;
+      // Find the other person connected to this dummy node
+      const otherEdge = g.edges().find(e => 
+        e.w === dummyNodeId && e.v !== edgeId.v && e.v.startsWith('person-')
+      );
+      
+      if (otherEdge && !processedEdges.has(`${edgeId.v}-${otherEdge.v}`) && !processedEdges.has(`${otherEdge.v}-${edgeId.v}`)) {
+        // Create direct partnership line between the two persons
+        const otherPersonNode = g.node(otherEdge.v);
+        lines.push({
+          fromX: sourceNode.x,
+          fromY: sourceNode.y,
+          toX: otherPersonNode.x,
+          toY: otherPersonNode.y,
+          type: 'partner',
+          relationshipStatus: 'married',
+          id: `${edgeId.v}-${otherEdge.v}`,
+          fromId: edgeId.v,
+          toId: otherEdge.v
+        });
+        processedEdges.add(`${edgeId.v}-${otherEdge.v}`);
+        processedEdges.add(`${otherEdge.v}-${edgeId.v}`);
       }
     }
-    
-    // Calculate line positions from node centers
-    return {
-      fromX: sourceNode.x,
-      fromY: sourceNode.y,
-      toX: targetNode.x,
-      toY: targetNode.y,
-      type: lineType,
-      relationshipStatus: originalEdge?.relationshipStatus || 'married',
-      id: `${edgeId.v}-${edgeId.w}`,
-      fromId: edgeId.v,
-      toId: edgeId.w
-    };
+    // Handle parent-child relationships (from dummy nodes to children)
+    else if (edgeId.v.startsWith('partner-') && edgeId.w.startsWith('person-')) {
+      const dummyNode = g.node(edgeId.v);
+      lines.push({
+        fromX: dummyNode.x,
+        fromY: dummyNode.y,
+        toX: targetNode.x,
+        toY: targetNode.y,
+        type: 'parent-child',
+        relationshipStatus: originalEdge?.relationshipStatus,
+        id: `${edgeId.v}-${edgeId.w}`,
+        fromId: edgeId.v,
+        toId: edgeId.w
+      });
+    }
   });
   
   return { nodes, lines };
