@@ -283,25 +283,13 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
         // 2. Find midpoint of partner line
         const midX = (parent1.x + parent2.x) / 2;
         const parentY = parent1.y; // Assuming both parents are on same level
-        
-        // 3. Vertical line from parent midpoint down
         const childrenY = children[0].y; // All children should be on same generation
-        const midY = parentY + (childrenY - parentY) / 2;
         
-        connectionElements.push(
-          <line
-            key={`parent-to-children-${familyIndex}`}
-            x1={midX}
-            y1={parentY + 40} // Start just below parent symbols
-            x2={midX}
-            y2={midY}
-            stroke="#6b7280"
-            strokeWidth="2"
-          />
-        );
-
+        // Calculate sibling line position
+        const siblingLineY = parentY + (childrenY - parentY) / 2;
+        
+        // 3. Sibling line (horizontal line connecting all children)
         if (children.length > 1) {
-          // 4. Sibling line (horizontal line connecting all children)
           const leftmostChild = Math.min(...children.map(c => c.x));
           const rightmostChild = Math.max(...children.map(c => c.x));
           
@@ -309,22 +297,48 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
             <line
               key={`sibling-line-${familyIndex}`}
               x1={leftmostChild}
-              y1={midY}
+              y1={siblingLineY}
               x2={rightmostChild}
-              y2={midY}
+              y2={siblingLineY}
+              stroke="#6b7280"
+              strokeWidth="2"
+            />
+          );
+        } else {
+          // For single child, create a small horizontal line at the child's x position
+          connectionElements.push(
+            <line
+              key={`sibling-line-${familyIndex}`}
+              x1={children[0].x - 20}
+              y1={siblingLineY}
+              x2={children[0].x + 20}
+              y2={siblingLineY}
               stroke="#6b7280"
               strokeWidth="2"
             />
           );
         }
 
-        // 5. Individual lines to each child
+        // 4. Single vertical line from parent midpoint to sibling line
+        connectionElements.push(
+          <line
+            key={`parent-to-children-${familyIndex}`}
+            x1={midX}
+            y1={parentY + 40} // Start just below parent symbols
+            x2={midX}
+            y2={siblingLineY}
+            stroke="#6b7280"
+            strokeWidth="2"
+          />
+        );
+
+        // 5. Individual lines from sibling line to each child
         children.forEach((child, childIndex) => {
           connectionElements.push(
             <line
               key={`child-${familyIndex}-${childIndex}`}
               x1={child.x}
-              y1={midY}
+              y1={siblingLineY}
               x2={child.x}
               y2={child.y - 40} // Stop just above child symbol
               stroke="#6b7280"
@@ -349,23 +363,10 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
         
         if (childrenPersons.length > 0) {
           const childrenY = childrenPersons[0].y;
-          const midY = person.y + (childrenY - person.y) / 2;
+          const siblingLineY = person.y + (childrenY - person.y) / 2;
           
-          // Vertical line from single parent down
-          connectionElements.push(
-            <line
-              key={`single-parent-${person.id}`}
-              x1={person.x}
-              y1={person.y + 40}
-              x2={person.x}
-              y2={midY}
-              stroke="#6b7280"
-              strokeWidth="2"
-            />
-          );
-
+          // Sibling line for single parent's children
           if (childrenPersons.length > 1) {
-            // Sibling line for single parent's children
             const leftmostChild = Math.min(...childrenPersons.map(c => c.x));
             const rightmostChild = Math.max(...childrenPersons.map(c => c.x));
             
@@ -373,22 +374,48 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
               <line
                 key={`single-sibling-line-${person.id}`}
                 x1={leftmostChild}
-                y1={midY}
+                y1={siblingLineY}
                 x2={rightmostChild}
-                y2={midY}
+                y2={siblingLineY}
+                stroke="#6b7280"
+                strokeWidth="2"
+              />
+            );
+          } else {
+            // For single child, create a small horizontal line at the child's x position
+            connectionElements.push(
+              <line
+                key={`single-sibling-line-${person.id}`}
+                x1={childrenPersons[0].x - 20}
+                y1={siblingLineY}
+                x2={childrenPersons[0].x + 20}
+                y2={siblingLineY}
                 stroke="#6b7280"
                 strokeWidth="2"
               />
             );
           }
 
-          // Lines to each child
+          // Single vertical line from parent to sibling line
+          connectionElements.push(
+            <line
+              key={`single-parent-${person.id}`}
+              x1={person.x}
+              y1={person.y + 40}
+              x2={person.x}
+              y2={siblingLineY}
+              stroke="#6b7280"
+              strokeWidth="2"
+            />
+          );
+
+          // Lines from sibling line to each child
           childrenPersons.forEach((child, childIndex) => {
             connectionElements.push(
               <line
                 key={`single-child-${person.id}-${childIndex}`}
                 x1={child.x}
-                y1={midY}
+                y1={siblingLineY}
                 x2={child.x}
                 y2={child.y - 40}
                 stroke="#6b7280"
