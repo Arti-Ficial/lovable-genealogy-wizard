@@ -87,19 +87,15 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
         }
       });
       
-      // Assign generations (0 = root, higher numbers = deeper generations)
       const generations: { [key: string]: number } = {};
       const visited = new Set<string>();
       
-      // Find root nodes (people with no parents)
       const roots = people.filter(person => !parentsOf[person.id] || parentsOf[person.id].length === 0);
       
-      // If no clear roots, use the first person as root
       if (roots.length === 0 && people.length > 0) {
         roots.push(people[0]);
       }
       
-      // BFS to assign generations
       const queue: { id: string; generation: number }[] = [];
       roots.forEach(root => {
         generations[root.id] = 0;
@@ -121,14 +117,12 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
         }
       }
       
-      // Assign generation 0 to any unvisited nodes
       people.forEach(person => {
         if (generations[person.id] === undefined) {
           generations[person.id] = 0;
         }
       });
       
-      // Group people by generation
       const generationGroups: { [key: number]: Person[] } = {};
       people.forEach(person => {
         const gen = generations[person.id];
@@ -136,19 +130,16 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
         generationGroups[gen].push({ ...person, generation: gen });
       });
       
-      // Layout parameters
       const startY = 100;
       const generationSpacing = 150;
       const personSpacing = 180;
       const svgWidth = 800;
       
-      // Position people within each generation
       Object.keys(generationGroups).forEach(genKey => {
         const gen = parseInt(genKey);
         const genPeople = generationGroups[gen];
         const genY = startY + (gen * generationSpacing);
         
-        // Center the generation horizontally
         const totalWidth = (genPeople.length - 1) * personSpacing;
         const startX = (svgWidth - totalWidth) / 2;
         
@@ -170,7 +161,62 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
     };
   };
 
+  // Identify partner relationships and family structures
+  const identifyFamilyStructures = (people: Person[], connections: Connection[]) => {
+    const childrenOf: { [key: string]: string[] } = {};
+    const parentsOf: { [key: string]: string[] } = {};
+    
+    connections.forEach(conn => {
+      if (conn.type === 'parent-child') {
+        if (!childrenOf[conn.from]) childrenOf[conn.from] = [];
+        if (!parentsOf[conn.to]) parentsOf[conn.to] = [];
+        
+        childrenOf[conn.from].push(conn.to);
+        parentsOf[conn.to].push(conn.from);
+      }
+    });
+
+    // Find partner relationships (people who share children)
+    const partnerPairs: { parent1: Person; parent2: Person; children: Person[] }[] = [];
+    const processedParents = new Set<string>();
+
+    people.forEach(person => {
+      if (processedParents.has(person.id)) return;
+      
+      const children = childrenOf[person.id] || [];
+      if (children.length === 0) return;
+
+      // Find potential partners (other parents of the same children)
+      const potentialPartners = people.filter(other => 
+        other.id !== person.id && 
+        !processedParents.has(other.id) &&
+        children.some(childId => (childrenOf[other.id] || []).includes(childId))
+      );
+
+      if (potentialPartners.length > 0) {
+        const partner = potentialPartners[0];
+        const sharedChildren = children.filter(childId => 
+          (childrenOf[partner.id] || []).includes(childId)
+        );
+        
+        if (sharedChildren.length > 0) {
+          partnerPairs.push({
+            parent1: person,
+            parent2: partner,
+            children: sharedChildren.map(childId => people.find(p => p.id === childId)!).filter(Boolean)
+          });
+          
+          processedParents.add(person.id);
+          processedParents.add(partner.id);
+        }
+      }
+    });
+
+    return { partnerPairs, childrenOf, parentsOf };
+  };
+
   const { people, connections } = parseGenogram(mermaidCode);
+  const { partnerPairs, childrenOf } = identifyFamilyStructures(people, connections);
   
   const PersonNode = ({ person }: { person: Person }) => {
     const isCircle = person.gender === 'female';
@@ -214,60 +260,147 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
     );
   };
   
-  const ConnectionLine = ({ connection, people }: { connection: Connection; people: Person[] }) => {
-    const fromPerson = people.find(p => p.id === connection.from);
-    const toPerson = people.find(p => p.id === connection.to);
-    
-    if (!fromPerson || !toPerson) return null;
-    
-    // For parent-child relationships, draw L-shaped connections
-    if (connection.type === 'parent-child') {
-      const midY = fromPerson.y + (toPerson.y - fromPerson.y) / 2;
+  const FamilyConnections = () => {
+    const connectionElements: JSX.Element[] = [];
+
+    partnerPairs.forEach((family, familyIndex) => {
+      const { parent1, parent2, children } = family;
       
-      return (
-        <g>
-          {/* Vertical line from parent down */}
-          <line
-            x1={fromPerson.x}
-            y1={fromPerson.y + 40}
-            x2={fromPerson.x}
-            y2={midY}
-            stroke="#6b7280"
-            strokeWidth="2"
-          />
-          {/* Horizontal line across */}
-          <line
-            x1={fromPerson.x}
-            y1={midY}
-            x2={toPerson.x}
-            y2={midY}
-            stroke="#6b7280"
-            strokeWidth="2"
-          />
-          {/* Vertical line to child */}
-          <line
-            x1={toPerson.x}
-            y1={midY}
-            x2={toPerson.x}
-            y2={toPerson.y - 40}
-            stroke="#6b7280"
-            strokeWidth="2"
-          />
-        </g>
+      // 1. Partner connection (horizontal line between parents)
+      connectionElements.push(
+        <line
+          key={`partner-${familyIndex}`}
+          x1={parent1.x}
+          y1={parent1.y}
+          x2={parent2.x}
+          y2={parent2.y}
+          stroke="#6b7280"
+          strokeWidth="2"
+        />
       );
-    }
-    
-    // For other relationships, draw straight lines
-    return (
-      <line
-        x1={fromPerson.x}
-        y1={fromPerson.y}
-        x2={toPerson.x}
-        y2={toPerson.y}
-        stroke="#6b7280"
-        strokeWidth="2"
-      />
-    );
+
+      if (children.length > 0) {
+        // 2. Find midpoint of partner line
+        const midX = (parent1.x + parent2.x) / 2;
+        const parentY = parent1.y; // Assuming both parents are on same level
+        
+        // 3. Vertical line from parent midpoint down
+        const childrenY = children[0].y; // All children should be on same generation
+        const midY = parentY + (childrenY - parentY) / 2;
+        
+        connectionElements.push(
+          <line
+            key={`parent-to-children-${familyIndex}`}
+            x1={midX}
+            y1={parentY + 40} // Start just below parent symbols
+            x2={midX}
+            y2={midY}
+            stroke="#6b7280"
+            strokeWidth="2"
+          />
+        );
+
+        if (children.length > 1) {
+          // 4. Sibling line (horizontal line connecting all children)
+          const leftmostChild = Math.min(...children.map(c => c.x));
+          const rightmostChild = Math.max(...children.map(c => c.x));
+          
+          connectionElements.push(
+            <line
+              key={`sibling-line-${familyIndex}`}
+              x1={leftmostChild}
+              y1={midY}
+              x2={rightmostChild}
+              y2={midY}
+              stroke="#6b7280"
+              strokeWidth="2"
+            />
+          );
+        }
+
+        // 5. Individual lines to each child
+        children.forEach((child, childIndex) => {
+          connectionElements.push(
+            <line
+              key={`child-${familyIndex}-${childIndex}`}
+              x1={child.x}
+              y1={midY}
+              x2={child.x}
+              y2={child.y - 40} // Stop just above child symbol
+              stroke="#6b7280"
+              strokeWidth="2"
+            />
+          );
+        });
+      }
+    });
+
+    // Handle single parents (no partner but have children)
+    people.forEach(person => {
+      const children = childrenOf[person.id] || [];
+      const hasPartner = partnerPairs.some(pair => 
+        pair.parent1.id === person.id || pair.parent2.id === person.id
+      );
+      
+      if (children.length > 0 && !hasPartner) {
+        const childrenPersons = children.map(childId => 
+          people.find(p => p.id === childId)!
+        ).filter(Boolean);
+        
+        if (childrenPersons.length > 0) {
+          const childrenY = childrenPersons[0].y;
+          const midY = person.y + (childrenY - person.y) / 2;
+          
+          // Vertical line from single parent down
+          connectionElements.push(
+            <line
+              key={`single-parent-${person.id}`}
+              x1={person.x}
+              y1={person.y + 40}
+              x2={person.x}
+              y2={midY}
+              stroke="#6b7280"
+              strokeWidth="2"
+            />
+          );
+
+          if (childrenPersons.length > 1) {
+            // Sibling line for single parent's children
+            const leftmostChild = Math.min(...childrenPersons.map(c => c.x));
+            const rightmostChild = Math.max(...childrenPersons.map(c => c.x));
+            
+            connectionElements.push(
+              <line
+                key={`single-sibling-line-${person.id}`}
+                x1={leftmostChild}
+                y1={midY}
+                x2={rightmostChild}
+                y2={midY}
+                stroke="#6b7280"
+                strokeWidth="2"
+              />
+            );
+          }
+
+          // Lines to each child
+          childrenPersons.forEach((child, childIndex) => {
+            connectionElements.push(
+              <line
+                key={`single-child-${person.id}-${childIndex}`}
+                x1={child.x}
+                y1={midY}
+                x2={child.x}
+                y2={child.y - 40}
+                stroke="#6b7280"
+                strokeWidth="2"
+              />
+            );
+          });
+        }
+      }
+    });
+
+    return <>{connectionElements}</>;
   };
   
   // Calculate dynamic SVG dimensions based on content
@@ -278,10 +411,8 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
   return (
     <div className="w-full h-full flex items-center justify-center">
       <svg width={svgWidth} height={svgHeight} className="border rounded-lg bg-white">
-        {/* Render connections first (behind nodes) */}
-        {connections.map((connection, index) => (
-          <ConnectionLine key={index} connection={connection} people={people} />
-        ))}
+        {/* Render family connections */}
+        <FamilyConnections />
         
         {/* Render people nodes */}
         {people.map(person => (
