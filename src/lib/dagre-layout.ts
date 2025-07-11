@@ -150,13 +150,26 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
       if (otherEdge && !processedEdges.has(`${edgeId.v}-${otherEdge.v}`) && !processedEdges.has(`${otherEdge.v}-${edgeId.v}`)) {
         // Create direct partnership line between the two persons
         const otherPersonNode = g.node(otherEdge.v);
+        
+        // Find the original relationship status from the input edges
+        // Look for edges that connect to this partnership dummy node and have relationshipStatus
+        let relationshipStatus = 'married'; // default
+        const partnershipEdges = input.edges.filter(e => 
+          e.to === dummyNodeId && e.relationshipStatus
+        );
+        if (partnershipEdges.length > 0) {
+          relationshipStatus = partnershipEdges[0].relationshipStatus;
+        }
+        
+        console.log(`Creating partnership line for ${edgeId.v} - ${otherEdge.v} with status: ${relationshipStatus}`);
+        
         const partnershipLine = {
           fromX: sourceNode.x,
           fromY: sourceNode.y,
           toX: otherPersonNode.x,
           toY: otherPersonNode.y,
           type: 'partner',
-          relationshipStatus: 'married',
+          relationshipStatus: relationshipStatus,
           id: `${edgeId.v}-${otherEdge.v}`,
           fromId: edgeId.v,
           toId: otherEdge.v,
