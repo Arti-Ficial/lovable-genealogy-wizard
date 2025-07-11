@@ -48,11 +48,8 @@ const GenogramResult = ({ mermaidCode, onReset }: GenogramResultProps) => {
           // Generate unique ID for this render
           const diagramId = `genogram-${Date.now()}`;
           
-          // Render the mermaid diagram with explicit options
-          const { svg } = await mermaid.render(diagramId, mermaidCode, {
-            fontSize: 12,
-            fontFamily: 'arial'
-          });
+          // Render the mermaid diagram without invalid options
+          const { svg } = await mermaid.render(diagramId, mermaidCode);
           
           element.innerHTML = svg;
           
