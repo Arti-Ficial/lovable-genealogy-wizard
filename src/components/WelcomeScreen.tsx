@@ -5,9 +5,10 @@ import FamilyIcon from './FamilyIcon';
 
 type WelcomeScreenProps = {
   onStart: () => void;
+  onLoadTestFamily: () => void;
 };
 
-const WelcomeScreen = ({ onStart }: WelcomeScreenProps) => {
+const WelcomeScreen = ({ onStart, onLoadTestFamily }: WelcomeScreenProps) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
       <div className="max-w-2xl mx-auto text-center animate-fade-in">
@@ -26,13 +27,24 @@ const WelcomeScreen = ({ onStart }: WelcomeScreenProps) => {
           persönlichen Genogramms. Es sind keine Vorkenntnisse nötig.
         </p>
         
-        <Button 
-          onClick={onStart}
-          size="lg"
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-        >
-          Neues Genogramm erstellen
-        </Button>
+        <div className="space-y-4">
+          <Button 
+            onClick={onStart}
+            size="lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 w-full max-w-sm"
+          >
+            Neues Genogramm erstellen
+          </Button>
+          
+          <Button 
+            onClick={onLoadTestFamily}
+            size="lg"
+            variant="outline"
+            className="border-2 border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3 text-lg rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 w-full max-w-sm"
+          >
+            Standardfamilie laden & testen
+          </Button>
+        </div>
       </div>
     </div>
   );
