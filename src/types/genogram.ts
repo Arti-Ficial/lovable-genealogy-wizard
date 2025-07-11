@@ -1,6 +1,8 @@
 
 export type Gender = 'male' | 'female';
 
+export type RelationshipStatus = 'married' | 'divorced' | 'conflicted' | 'separated';
+
 export type Person = {
   id: string;
   name: string;
@@ -12,6 +14,7 @@ export type Person = {
   relationship: 'self' | 'mother' | 'father' | 'sibling' | 'partner' | 'child';
   parentIds?: string[]; // IDs der Eltern dieser Person
   position: { x: number; y: number };
+  relationshipStatus?: RelationshipStatus; // Für Partner-Beziehungen
 };
 
 export type PersonalInfo = {

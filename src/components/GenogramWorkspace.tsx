@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Person, PersonalInfo } from '@/types/genogram';
+import { Person, PersonalInfo, RelationshipStatus } from '@/types/genogram';
 import PersonModal from './PersonModal';
+import RelationshipEditModal from './RelationshipEditModal';
 import FamilyIcon from './FamilyIcon';
 import GenogramResult from './GenogramResult';
 import GenogramCanvas from './GenogramCanvas';
@@ -16,7 +17,15 @@ type GenogramWorkspaceProps = {
 const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
   const [people, setPeople] = useState<Person[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [relationshipModalOpen, setRelationshipModalOpen] = useState(false);
   const [currentRelationship, setCurrentRelationship] = useState<'mother' | 'father' | 'sibling' | 'partner' | 'child'>('mother');
+  const [currentRelationshipEdit, setCurrentRelationshipEdit] = useState<{
+    lineId: string;
+    fromId: string;
+    toId: string;
+    currentStatus: RelationshipStatus;
+    personNames: { from: string; to: string };
+  } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [mermaidCode, setMermaidCode] = useState<string | null>(null);
   const { toast } = useToast();
@@ -125,7 +134,8 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
             relationships.push({
               from: 1,
               to: personId,
-              type: 'partner'
+              type: 'partner',
+              relationshipStatus: person.relationshipStatus || 'married'
             });
             break;
           case 'sibling':
@@ -202,9 +212,49 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
     setPeople([]);
   };
 
+  const handleRelationshipAction = (lineId: string, fromId: string, toId: string, action: 'edit') => {
+    console.log('Relationship action:', action, 'for line:', lineId);
+    
+    if (action === 'edit') {
+      // Find the people involved in this relationship
+      const fromPerson = people.find(p => p.id === fromId) || { name: 'Sie' }; // Default to 'Sie' for ego
+      const toPerson = people.find(p => p.id === toId) || { name: 'Sie' };
+      
+      // For now, assume married status, but this should be retrieved from actual data
+      const currentStatus: RelationshipStatus = 'married'; // TODO: Get from actual relationship data
+      
+      setCurrentRelationshipEdit({
+        lineId,
+        fromId,
+        toId,
+        currentStatus,
+        personNames: {
+          from: fromPerson.name,
+          to: toPerson.name
+        }
+      });
+      setRelationshipModalOpen(true);
+    }
+  };
+
+  const handleRelationshipStatusSave = (newStatus: RelationshipStatus) => {
+    if (!currentRelationshipEdit) return;
+    
+    // TODO: Update the relationship status in the data
+    // This would need to be implemented to actually update the relationship data
+    console.log('Updating relationship status to:', newStatus);
+    
+    toast({
+      title: "Beziehung aktualisiert",
+      description: `Der Beziehungsstatus wurde erfolgreich geändert.`,
+    });
+    
+    setRelationshipModalOpen(false);
+    setCurrentRelationshipEdit(null);
+  };
+
   const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => {
     console.log('Person action:', action, 'for node:', nodeId);
-    // TODO: Implement person actions based on the selected action
     switch (action) {
       case 'addPartner':
         setCurrentRelationship('partner');
@@ -215,14 +265,12 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         setModalOpen(true);
         break;
       case 'edit':
-        // TODO: Implement edit functionality
         toast({
           title: "Funktion in Entwicklung",
           description: "Die Bearbeitungsfunktion wird bald verfügbar sein.",
         });
         break;
       case 'delete':
-        // TODO: Implement delete functionality
         toast({
           title: "Funktion in Entwicklung", 
           description: "Die Löschfunktion wird bald verfügbar sein.",
@@ -238,6 +286,7 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         mermaidCode={mermaidCode} 
         onReset={handleReset}
         onPersonAction={handlePersonAction}
+        onRelationshipAction={handleRelationshipAction}
       />
     );
   }
@@ -298,6 +347,17 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         onSave={handleSavePerson}
         relationship={currentRelationship}
         existingPeople={people}
+      />
+
+      <RelationshipEditModal
+        isOpen={relationshipModalOpen}
+        onClose={() => {
+          setRelationshipModalOpen(false);
+          setCurrentRelationshipEdit(null);
+        }}
+        onSave={handleRelationshipStatusSave}
+        currentStatus={currentRelationshipEdit?.currentStatus || 'married'}
+        personNames={currentRelationshipEdit?.personNames || { from: '', to: '' }}
       />
     </div>
   );

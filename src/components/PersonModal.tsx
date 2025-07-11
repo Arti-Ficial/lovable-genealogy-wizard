@@ -13,7 +13,7 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { Person, Gender } from '@/types/genogram';
+import { Person, Gender, RelationshipStatus } from '@/types/genogram';
 
 type PersonModalProps = {
   isOpen: boolean;
@@ -31,7 +31,8 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople }: 
     deathDate: undefined as Date | undefined,
     occupation: '',
     notes: '',
-    parentIds: [] as string[]
+    parentIds: [] as string[],
+    relationshipStatus: 'married' as RelationshipStatus
   });
 
   const getModalTitle = () => {
@@ -71,7 +72,8 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople }: 
       occupation: formData.occupation || undefined,
       notes: formData.notes || undefined,
       relationship: relationship === 'child' ? 'child' : relationship,
-      parentIds: shouldShowParentSelection() ? formData.parentIds : undefined
+      parentIds: shouldShowParentSelection() ? formData.parentIds : undefined,
+      relationshipStatus: relationship === 'partner' ? formData.relationshipStatus : undefined
     });
 
     // Reset form
@@ -82,7 +84,8 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople }: 
       deathDate: undefined,
       occupation: '',
       notes: '',
-      parentIds: []
+      parentIds: [],
+      relationshipStatus: 'married'
     });
     onClose();
   };
@@ -96,7 +99,8 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople }: 
       deathDate: undefined,
       occupation: '',
       notes: '',
-      parentIds: []
+      parentIds: [],
+      relationshipStatus: 'married'
     });
     onClose();
   };
@@ -139,6 +143,25 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople }: 
               </SelectContent>
             </Select>
           </div>
+
+          {relationship === 'partner' && (
+            <div className="space-y-2">
+              <Label className="text-base font-medium text-gray-700">
+                Beziehungsstatus *
+              </Label>
+              <Select onValueChange={(value: RelationshipStatus) => setFormData(prev => ({ ...prev, relationshipStatus: value }))}>
+                <SelectTrigger className="h-12 text-base">
+                  <SelectValue placeholder="Beziehungsstatus wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="married">Partnerschaft / Ehe</SelectItem>
+                  <SelectItem value="divorced">Geschieden / Getrennt</SelectItem>
+                  <SelectItem value="conflicted">Konfliktreiche Beziehung</SelectItem>
+                  <SelectItem value="separated">Abgebrochene Beziehung</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label className="text-base font-medium text-gray-700">

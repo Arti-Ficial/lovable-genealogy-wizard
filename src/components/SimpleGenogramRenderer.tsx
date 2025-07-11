@@ -15,6 +15,11 @@ type GenogramLine = {
   fromY: number;
   toX: number;
   toY: number;
+  type?: string;
+  relationshipStatus?: 'married' | 'divorced' | 'conflicted' | 'separated';
+  id?: string;
+  fromId?: string;
+  toId?: string;
 };
 
 type GenogramData = {
@@ -25,9 +30,10 @@ type GenogramData = {
 type SimpleGenogramRendererProps = {
   data: GenogramData;
   onPersonAction?: (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => void;
+  onRelationshipAction?: (lineId: string, fromId: string, toId: string, action: 'edit') => void;
 };
 
-const SimpleGenogramRenderer = ({ data, onPersonAction }: SimpleGenogramRendererProps) => {
+const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: SimpleGenogramRendererProps) => {
   const { nodes, lines } = data;
   
   // Calculate SVG dimensions based on node positions
@@ -81,6 +87,95 @@ const SimpleGenogramRenderer = ({ data, onPersonAction }: SimpleGenogramRenderer
       const midY = fromY + (toY - fromY) / 2;
       return `M ${fromX} ${fromY} L ${fromX} ${midY} L ${toX} ${midY} L ${toX} ${toY}`;
     }
+  };
+
+  // Function to create special line patterns for different relationship statuses
+  const createRelationshipPath = (line: GenogramLine) => {
+    const { fromX, fromY, toX, toY, relationshipStatus, type } = line;
+    
+    // Only apply special patterns to partner relationships
+    if (type !== 'partner' || !relationshipStatus || relationshipStatus === 'married') {
+      return createOrthogonalPath(line);
+    }
+
+    const basePath = `M ${fromX} ${fromY} L ${toX} ${toY}`;
+    
+    switch (relationshipStatus) {
+      case 'divorced':
+        // Two diagonal lines (//) over the partnership line
+        const midX = (fromX + toX) / 2;
+        const midY = (fromY + toY) / 2;
+        const offset = 8;
+        return {
+          basePath,
+          decorations: [
+            `M ${midX - offset} ${midY - offset} L ${midX - offset + 10} ${midY + offset + 10}`,
+            `M ${midX + offset - 10} ${midY - offset} L ${midX + offset} ${midY + offset + 10}`
+          ]
+        };
+      
+      case 'conflicted':
+        // Zigzag line
+        const segments = 4;
+        const segmentLength = (toX - fromX) / segments;
+        const amplitude = 8;
+        let zigzagPath = `M ${fromX} ${fromY}`;
+        for (let i = 1; i <= segments; i++) {
+          const x = fromX + i * segmentLength;
+          const y = fromY + (i % 2 === 0 ? amplitude : -amplitude);
+          zigzagPath += ` L ${x} ${y}`;
+        }
+        zigzagPath += ` L ${toX} ${toY}`;
+        return { basePath: zigzagPath };
+      
+      case 'separated':
+        // Dashed line
+        return { basePath, strokeDasharray: '8,4' };
+      
+      default:
+        return { basePath };
+    }
+  };
+
+  const RelationshipLine = ({ line, index }: { line: GenogramLine; index: number }) => {
+    const lineStyle = createRelationshipPath(line);
+    const isPartnerLine = line.type === 'partner';
+    const isClickable = isPartnerLine && onRelationshipAction && line.fromId && line.toId;
+    
+    const handleLineClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (isClickable && line.fromId && line.toId) {
+        onRelationshipAction(line.id || `${line.fromId}-${line.toId}`, line.fromId, line.toId, 'edit');
+      }
+    };
+
+    return (
+      <g key={`line-${index}`}>
+        <path
+          d={typeof lineStyle === 'object' ? lineStyle.basePath : lineStyle}
+          stroke="#6b7280"
+          strokeWidth="2"
+          strokeDasharray={typeof lineStyle === 'object' ? lineStyle.strokeDasharray : undefined}
+          fill="none"
+          className={isClickable ? "cursor-pointer hover:stroke-blue-500" : ""}
+          onClick={isClickable ? handleLineClick : undefined}
+        />
+        {/* Render decorations for divorced relationships */}
+        {typeof lineStyle === 'object' && lineStyle.decorations && 
+          lineStyle.decorations.map((decoration, decorIndex) => (
+            <path
+              key={`decoration-${index}-${decorIndex}`}
+              d={decoration}
+              stroke="#6b7280"
+              strokeWidth="2"
+              fill="none"
+              className={isClickable ? "cursor-pointer hover:stroke-blue-500" : ""}
+              onClick={isClickable ? handleLineClick : undefined}
+            />
+          ))
+        }
+      </g>
+    );
   };
 
   const PersonNode = ({ node }: { node: GenogramNode }) => {
@@ -169,13 +264,7 @@ const SimpleGenogramRenderer = ({ data, onPersonAction }: SimpleGenogramRenderer
       >
         {/* Render all lines first (behind nodes) */}
         {adjustedLines.map((line, index) => (
-          <path
-            key={`line-${index}`}
-            d={createOrthogonalPath(line)}
-            stroke="#6b7280"
-            strokeWidth="2"
-            fill="none"
-          />
+          <RelationshipLine key={`line-${index}`} line={line} index={index} />
         ))}
         
         {/* Render all nodes on top of lines */}

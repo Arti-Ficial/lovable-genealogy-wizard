@@ -11,6 +11,7 @@ export type GenogramRelationship = {
   from: string;
   to: string;
   type: 'partner' | 'parent-child' | 'sibling';
+  relationshipStatus?: 'married' | 'divorced' | 'conflicted' | 'separated';
 };
 
 export type GenogramInput = {
@@ -24,6 +25,7 @@ export type GenogramInput = {
     from: number;
     to: number;
     type: 'partner' | 'parent-child' | 'sibling';
+    relationshipStatus?: 'married' | 'divorced' | 'conflicted' | 'separated';
   }>;
 };
 
@@ -41,6 +43,7 @@ export type GenogramBackendData = {
     from: string;
     to: string;
     type?: string;
+    relationshipStatus?: 'married' | 'divorced' | 'conflicted' | 'separated';
   }>;
 };
 
@@ -59,6 +62,10 @@ export type GenogramLayoutResult = {
     toX: number;
     toY: number;
     type: string;
+    relationshipStatus?: 'married' | 'divorced' | 'conflicted' | 'separated';
+    id?: string;
+    fromId?: string;
+    toId?: string;
   }>;
 };
 
@@ -91,7 +98,10 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
   
   // Add edges to the graph
   input.edges.forEach(edge => {
-    g.setEdge(edge.from, edge.to, { type: edge.type || 'default' });
+    g.setEdge(edge.from, edge.to, { 
+      type: edge.type || 'default',
+      relationshipStatus: edge.relationshipStatus
+    });
   });
   
   // Calculate layout
@@ -122,6 +132,7 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
     const edge = g.edge(edgeId);
     const sourceNode = g.node(edgeId.v);
     const targetNode = g.node(edgeId.w);
+    const originalEdge = input.edges.find(e => e.from === edgeId.v && e.to === edgeId.w);
     
     // Calculate line positions from node centers
     return {
@@ -129,7 +140,11 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
       fromY: sourceNode.y,
       toX: targetNode.x,
       toY: targetNode.y,
-      type: edge.type || 'default'
+      type: edge.type || 'default',
+      relationshipStatus: originalEdge?.relationshipStatus,
+      id: `${edgeId.v}-${edgeId.w}`,
+      fromId: edgeId.v,
+      toId: edgeId.w
     };
   });
   
@@ -168,10 +183,16 @@ export function calculateGenogramLayout(input: GenogramInput): GenogramLayoutRes
     // For dagre, we need to determine the direction of parent-child relationships
     if (rel.type === 'parent-child') {
       // Parent points to child
-      g.setEdge(rel.from.toString(), rel.to.toString(), { type: rel.type });
+      g.setEdge(rel.from.toString(), rel.to.toString(), { 
+        type: rel.type,
+        relationshipStatus: rel.relationshipStatus
+      });
     } else {
       // For partner and sibling relationships, add undirected edges
-      g.setEdge(rel.from.toString(), rel.to.toString(), { type: rel.type });
+      g.setEdge(rel.from.toString(), rel.to.toString(), { 
+        type: rel.type,
+        relationshipStatus: rel.relationshipStatus
+      });
     }
   });
   
@@ -198,6 +219,9 @@ export function calculateGenogramLayout(input: GenogramInput): GenogramLayoutRes
     const edge = g.edge(edgeId);
     const sourceNode = g.node(edgeId.v);
     const targetNode = g.node(edgeId.w);
+    const originalRel = input.relationships.find(r => 
+      r.from.toString() === edgeId.v && r.to.toString() === edgeId.w
+    );
     
     // Calculate line positions from node centers
     return {
@@ -205,7 +229,11 @@ export function calculateGenogramLayout(input: GenogramInput): GenogramLayoutRes
       fromY: sourceNode.y,
       toX: targetNode.x,
       toY: targetNode.y,
-      type: edge.type || 'default'
+      type: edge.type || 'default',
+      relationshipStatus: originalRel?.relationshipStatus,
+      id: `${edgeId.v}-${edgeId.w}`,
+      fromId: edgeId.v,
+      toId: edgeId.w
     };
   });
   

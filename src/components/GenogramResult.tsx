@@ -27,9 +27,10 @@ type GenogramResultProps = {
   mermaidCode?: string;
   onReset: () => void;
   onPersonAction?: (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => void;
+  onRelationshipAction?: (lineId: string, fromId: string, toId: string, action: 'edit') => void;
 };
 
-const GenogramResult = ({ genogramData, mermaidCode, onReset, onPersonAction }: GenogramResultProps) => {
+const GenogramResult = ({ genogramData, mermaidCode, onReset, onPersonAction, onRelationshipAction }: GenogramResultProps) => {
   console.log('Rendering genogram with data:', genogramData);
   
   // Determine which data to use and process it
@@ -91,6 +92,7 @@ const GenogramResult = ({ genogramData, mermaidCode, onReset, onPersonAction }: 
             <SimpleGenogramRenderer 
               data={dataToRender} 
               onPersonAction={onPersonAction}
+              onRelationshipAction={onRelationshipAction}
             />
           </div>
 

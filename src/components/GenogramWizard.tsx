@@ -168,12 +168,18 @@ const GenogramWizard = () => {
     // TODO: Implement full person action functionality in wizard mode
   };
 
+  const handleRelationshipAction = (lineId: string, fromId: string, toId: string, action: 'edit') => {
+    console.log('Relationship action in wizard:', action, 'for line:', lineId);
+    // TODO: Implement relationship editing in wizard mode
+  };
+
   if (currentStep === 'result') {
     return (
       <GenogramResult 
         genogramData={genogramData}
         mermaidCode={mermaidCode}
         onPersonAction={handlePersonAction}
+        onRelationshipAction={handleRelationshipAction}
         onReset={() => {
           setCurrentStep('welcome');
           setMermaidCode('');
