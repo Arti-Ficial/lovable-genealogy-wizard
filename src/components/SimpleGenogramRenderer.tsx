@@ -142,9 +142,22 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
     const isPartnerLine = line.type === 'partner';
     const isClickable = isPartnerLine && onRelationshipAction && line.fromId && line.toId;
     
+    // Debug logging for partnership lines
+    if (isPartnerLine) {
+      console.log('Partnership line detected:', {
+        lineId: line.id,
+        fromId: line.fromId,
+        toId: line.toId,
+        isClickable,
+        relationshipStatus: line.relationshipStatus
+      });
+    }
+    
     const handleLineClick = (e: React.MouseEvent) => {
       e.stopPropagation();
+      console.log('Line clicked:', { line, isClickable });
       if (isClickable && line.fromId && line.toId) {
+        console.log('Calling onRelationshipAction with:', line.id || `${line.fromId}-${line.toId}`, line.fromId, line.toId);
         onRelationshipAction(line.id || `${line.fromId}-${line.toId}`, line.fromId, line.toId, 'edit');
       }
     };
