@@ -127,7 +127,7 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
       };
     });
   
-  // Extract edges with calculated positions and create partnership lines
+  // Extract edges with calculated positions and create proper family lines
   const processedEdges = new Set<string>();
   const lines: any[] = [];
   
@@ -137,7 +137,7 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
     const targetNode = g.node(edgeId.w);
     const originalEdge = input.edges.find(e => e.from === edgeId.v && e.to === edgeId.w);
     
-    // Check if this is a partnership connection via dummy node
+    // Handle partnership connections via dummy node
     if (edgeId.w.startsWith('partner-') && edgeId.v.startsWith('person-')) {
       const dummyNodeId = edgeId.w;
       // Find the other person connected to this dummy node
