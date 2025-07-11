@@ -57,17 +57,28 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
     
     // Parse connections
     lines.forEach(line => {
-      if (line.includes('---') || line.includes('-->')) {
-        const connectionMatch = line.match(/(\w+)\s*---\s*(\w+)|(\w+)\s*-->\s*(\w+)/);
-        if (connectionMatch) {
-          const from = connectionMatch[1] || connectionMatch[3];
-          const to = connectionMatch[2] || connectionMatch[4];
-          connections.push({
-            from,
-            to,
-            type: 'parent-child'
-          });
-        }
+      // Partner relationships (---)
+      const partnerMatch = line.match(/(\w+)\s*---\s*(\w+)/);
+      if (partnerMatch) {
+        const from = partnerMatch[1];
+        const to = partnerMatch[2];
+        connections.push({
+          from,
+          to,
+          type: 'partner'
+        });
+      }
+      
+      // Parent-child relationships (-->)
+      const parentChildMatch = line.match(/(\w+)\s*-->\s*(\w+)/);
+      if (parentChildMatch) {
+        const from = parentChildMatch[1];
+        const to = parentChildMatch[2];
+        connections.push({
+          from,
+          to,
+          type: 'parent-child'
+        });
       }
     });
     
@@ -180,6 +191,7 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
     const partnerPairs: { parent1: Person; parent2: Person; children: Person[] }[] = [];
     const processedParents = new Set<string>();
 
+    // First identify all partnerships by shared children
     people.forEach(person => {
       if (processedParents.has(person.id)) return;
       
@@ -208,6 +220,31 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
           
           processedParents.add(person.id);
           processedParents.add(partner.id);
+        }
+      }
+    });
+
+    // Also check for explicit partner relationships in connections
+    connections.forEach(conn => {
+      if (conn.type === 'partner') {
+        const person1 = people.find(p => p.id === conn.from);
+        const person2 = people.find(p => p.id === conn.to);
+        
+        if (person1 && person2 && !processedParents.has(person1.id) && !processedParents.has(person2.id)) {
+          const children1 = childrenOf[person1.id] || [];
+          const children2 = childrenOf[person2.id] || [];
+          const sharedChildren = children1.filter(childId => children2.includes(childId));
+          
+          if (sharedChildren.length > 0) {
+            partnerPairs.push({
+              parent1: person1,
+              parent2: person2,
+              children: sharedChildren.map(childId => people.find(p => p.id === childId)!).filter(Boolean)
+            });
+            
+            processedParents.add(person1.id);
+            processedParents.add(person2.id);
+          }
         }
       }
     });
