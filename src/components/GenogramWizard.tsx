@@ -183,14 +183,56 @@ const GenogramWizard = () => {
 
   const handleRelationshipSave = (status: RelationshipStatus) => {
     console.log('Saving relationship status:', status, 'for relationship:', selectedRelationship);
-    // TODO: Update the genogram data with the new relationship status
-    // For now, just show a success message
-    toast({
-      title: "Beziehung aktualisiert",
-      description: `Der Beziehungsstatus wurde auf "${status}" geändert.`,
-    });
+    
+    if (selectedRelationship && genogramData) {
+      // Update the genogram data with the new relationship status
+      const updatedGenogramData = { ...genogramData };
+      
+      // Handle both backend format and dagre format
+      if (updatedGenogramData.lines) {
+        // Dagre format - update the lines array
+        updatedGenogramData.lines = updatedGenogramData.lines.map((line: any) => {
+          if (line.id === selectedRelationship.lineId || 
+              (line.fromId === selectedRelationship.fromId && line.toId === selectedRelationship.toId) ||
+              (line.fromId === selectedRelationship.toId && line.toId === selectedRelationship.fromId)) {
+            return { ...line, relationshipStatus: status };
+          }
+          return line;
+        });
+      } else if (updatedGenogramData.relationships) {
+        // Original input format - update the relationships array
+        updatedGenogramData.relationships = updatedGenogramData.relationships.map((rel: any) => {
+          const fromId = `person-${rel.from}`;
+          const toId = `person-${rel.to}`;
+          if ((fromId === selectedRelationship.fromId && toId === selectedRelationship.toId) ||
+              (fromId === selectedRelationship.toId && toId === selectedRelationship.fromId)) {
+            return { ...rel, relationshipStatus: status };
+          }
+          return rel;
+        });
+      }
+      
+      setGenogramData(updatedGenogramData);
+      
+      toast({
+        title: "Beziehung aktualisiert",
+        description: `Der Beziehungsstatus wurde auf "${getStatusLabel(status)}" geändert.`,
+      });
+    }
+    
     setIsRelationshipModalOpen(false);
     setSelectedRelationship(null);
+  };
+
+  // Helper function to get status label
+  const getStatusLabel = (status: RelationshipStatus) => {
+    switch (status) {
+      case 'married': return 'Partnerschaft / Ehe';
+      case 'divorced': return 'Geschieden / Getrennt';
+      case 'conflicted': return 'Konfliktreiche Beziehung';
+      case 'separated': return 'Abgebrochene Beziehung';
+      default: return 'Partnerschaft / Ehe';
+    }
   };
 
   // Helper function to get person names from genogram data
@@ -207,6 +249,32 @@ const GenogramWizard = () => {
       from: fromPerson?.name || fromPerson?.label || fromId,
       to: toPerson?.name || toPerson?.label || toId
     };
+  };
+
+  // Helper function to get current relationship status
+  const getCurrentRelationshipStatus = (fromId: string, toId: string): RelationshipStatus => {
+    if (!genogramData) return 'married';
+    
+    // Handle both backend format and dagre format
+    if (genogramData.lines) {
+      // Dagre format - find the line
+      const line = genogramData.lines.find((line: any) => 
+        (line.fromId === fromId && line.toId === toId) ||
+        (line.fromId === toId && line.toId === fromId)
+      );
+      return line?.relationshipStatus || 'married';
+    } else if (genogramData.relationships) {
+      // Original input format - find the relationship
+      const rel = genogramData.relationships.find((rel: any) => {
+        const relFromId = `person-${rel.from}`;
+        const relToId = `person-${rel.to}`;
+        return (relFromId === fromId && relToId === toId) ||
+               (relFromId === toId && relToId === fromId);
+      });
+      return rel?.relationshipStatus || 'married';
+    }
+    
+    return 'married';
   };
 
   if (currentStep === 'result') {
@@ -232,7 +300,7 @@ const GenogramWizard = () => {
               setSelectedRelationship(null);
             }}
             onSave={handleRelationshipSave}
-            currentStatus="married"
+            currentStatus={getCurrentRelationshipStatus(selectedRelationship.fromId, selectedRelationship.toId)}
             personNames={getPersonNames(selectedRelationship.fromId, selectedRelationship.toId)}
           />
         )}
