@@ -140,6 +140,7 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
   const RelationshipLine = ({ line, index }: { line: GenogramLine; index: number }) => {
     const lineStyle = createRelationshipPath(line);
     const isPartnerLine = line.type === 'partner';
+    const isParentChildLine = line.type === 'parent-child';
     const isClickable = isPartnerLine && !!onRelationshipAction && !!line.fromId && !!line.toId;
     
     const handleLineClick = (e: React.MouseEvent) => {
@@ -149,12 +150,25 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
       }
     };
 
+    // Different styling for different line types
+    const getLineStroke = () => {
+      if (isPartnerLine) return "#374151"; // Darker for partnerships
+      if (isParentChildLine) return "#6b7280"; // Standard for parent-child
+      return "#9ca3af"; // Lighter for other relationships
+    };
+
+    const getLineWidth = () => {
+      if (isPartnerLine) return "3"; // Thicker for partnerships
+      if (isParentChildLine) return "2"; // Standard for parent-child
+      return "1"; // Thinner for other relationships
+    };
+
     return (
       <g key={`line-${index}`}>
         <path
           d={typeof lineStyle === 'object' ? lineStyle.basePath : lineStyle}
-          stroke="#6b7280"
-          strokeWidth="2"
+          stroke={getLineStroke()}
+          strokeWidth={getLineWidth()}
           strokeDasharray={typeof lineStyle === 'object' ? lineStyle.strokeDasharray : undefined}
           fill="none"
           className={isClickable ? "cursor-pointer hover:stroke-blue-500" : ""}
@@ -166,8 +180,8 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
             <path
               key={`decoration-${index}-${decorIndex}`}
               d={decoration}
-              stroke="#6b7280"
-              strokeWidth="2"
+              stroke={getLineStroke()}
+              strokeWidth={getLineWidth()}
               fill="none"
               className={isClickable ? "cursor-pointer hover:stroke-blue-500" : ""}
               onClick={isClickable ? handleLineClick : undefined}
