@@ -71,6 +71,11 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
       return `M ${fromX} ${fromY} L ${toX} ${toY}`;
     }
     
+    // For generation connectors and sibling connectors (straight lines)
+    if (type === 'generation-connector' || type === 'sibling-connector') {
+      return `M ${fromX} ${fromY} L ${toX} ${toY}`;
+    }
+    
     // For parent-child relationships (vertical connections with orthogonal routing)
     if (type === 'parent-child' || Math.abs(fromY - toY) > 10) {
       const midY = fromY + (toY - fromY) / 2;
@@ -141,6 +146,8 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
     const lineStyle = createRelationshipPath(line);
     const isPartnerLine = line.type === 'partner';
     const isParentChildLine = line.type === 'parent-child';
+    const isGenerationConnector = line.type === 'generation-connector';
+    const isSiblingConnector = line.type === 'sibling-connector';
     const isClickable = isPartnerLine && !!onRelationshipAction && !!line.fromId && !!line.toId;
     
     const handleLineClick = (e: React.MouseEvent) => {
@@ -153,13 +160,13 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
     // Different styling for different line types
     const getLineStroke = () => {
       if (isPartnerLine) return "#374151"; // Darker for partnerships
-      if (isParentChildLine) return "#6b7280"; // Standard for parent-child
+      if (isParentChildLine || isGenerationConnector || isSiblingConnector) return "#6b7280"; // Standard for family connections
       return "#9ca3af"; // Lighter for other relationships
     };
 
     const getLineWidth = () => {
       if (isPartnerLine) return "3"; // Thicker for partnerships
-      if (isParentChildLine) return "2"; // Standard for parent-child
+      if (isParentChildLine || isGenerationConnector || isSiblingConnector) return "2"; // Standard for family connections
       return "1"; // Thinner for other relationships
     };
 
