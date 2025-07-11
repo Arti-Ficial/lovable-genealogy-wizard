@@ -202,9 +202,44 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
     setPeople([]);
   };
 
+  const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => {
+    console.log('Person action:', action, 'for node:', nodeId);
+    // TODO: Implement person actions based on the selected action
+    switch (action) {
+      case 'addPartner':
+        setCurrentRelationship('partner');
+        setModalOpen(true);
+        break;
+      case 'addChild':
+        setCurrentRelationship('child');
+        setModalOpen(true);
+        break;
+      case 'edit':
+        // TODO: Implement edit functionality
+        toast({
+          title: "Funktion in Entwicklung",
+          description: "Die Bearbeitungsfunktion wird bald verfügbar sein.",
+        });
+        break;
+      case 'delete':
+        // TODO: Implement delete functionality
+        toast({
+          title: "Funktion in Entwicklung", 
+          description: "Die Löschfunktion wird bald verfügbar sein.",
+        });
+        break;
+    }
+  };
+
   // If mermaid code is available, show the result view
   if (mermaidCode) {
-    return <GenogramResult mermaidCode={mermaidCode} onReset={handleReset} />;
+    return (
+      <GenogramResult 
+        mermaidCode={mermaidCode} 
+        onReset={handleReset}
+        onPersonAction={handlePersonAction}
+      />
+    );
   }
 
   return (
@@ -223,7 +258,31 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
           <GenogramCanvas
             people={people}
             personalInfo={personalInfo}
-            onAddPerson={handleAddPerson}
+            onPersonAction={(personId, action) => {
+              console.log('Person action in workspace:', action, 'for person:', personId);
+              switch (action) {
+                case 'addPartner':
+                  setCurrentRelationship('partner');
+                  setModalOpen(true);
+                  break;
+                case 'addChild':
+                  setCurrentRelationship('child');
+                  setModalOpen(true);
+                  break;
+                case 'edit':
+                  toast({
+                    title: "Funktion in Entwicklung",
+                    description: "Die Bearbeitungsfunktion wird bald verfügbar sein.",
+                  });
+                  break;
+                case 'delete':
+                  toast({
+                    title: "Funktion in Entwicklung", 
+                    description: "Die Löschfunktion wird bald verfügbar sein.",
+                  });
+                  break;
+              }
+            }}
           />
 
           <GenerateButton

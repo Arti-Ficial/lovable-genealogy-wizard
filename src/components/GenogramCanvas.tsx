@@ -2,26 +2,18 @@
 import React from 'react';
 import { Person, PersonalInfo } from '@/types/genogram';
 import PersonSymbol from './PersonSymbol';
-import AddPersonButton from './AddPersonButton';
+
 import ConnectionLines from './ConnectionLines';
 
 type GenogramCanvasProps = {
   people: Person[];
   personalInfo: PersonalInfo;
-  onAddPerson: (relationship: 'mother' | 'father' | 'sibling' | 'partner' | 'child') => void;
+  onPersonAction?: (personId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => void;
 };
 
-const GenogramCanvas = ({ people, personalInfo, onAddPerson }: GenogramCanvasProps) => {
+const GenogramCanvas = ({ people, personalInfo, onPersonAction }: GenogramCanvasProps) => {
   const centerX = 400;
   const centerY = 200;
-
-  const addButtonPositions = {
-    mother: { x: 250, y: 100 },
-    father: { x: 550, y: 100 },
-    sibling: { x: 200, y: 200 },
-    partner: { x: 600, y: 200 },
-    child: { x: 400, y: 350 }
-  };
 
   return (
     <div className="relative bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 min-h-[500px] overflow-hidden">
@@ -38,19 +30,14 @@ const GenogramCanvas = ({ people, personalInfo, onAddPerson }: GenogramCanvasPro
         </div>
       </div>
 
-      {/* Add person buttons */}
-      {Object.entries(addButtonPositions).map(([relationship, position]) => (
-        <AddPersonButton
-          key={relationship}
-          relationship={relationship as 'mother' | 'father' | 'sibling' | 'partner' | 'child'}
-          position={position}
-          onAddPerson={onAddPerson}
-        />
-      ))}
 
       {/* Render all added people */}
       {people.map(person => (
-        <PersonSymbol key={person.id} person={person} />
+        <PersonSymbol 
+          key={person.id} 
+          person={person} 
+          onPersonAction={onPersonAction}
+        />
       ))}
     </div>
   );

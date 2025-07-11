@@ -161,11 +161,19 @@ const GenogramWizard = () => {
     );
   }
 
+  const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => {
+    console.log('Person action in wizard:', action, 'for node:', nodeId);
+    // For now, just show a message that this functionality is coming
+    // In the future, this could open a modal or navigate to an edit mode
+    // TODO: Implement full person action functionality in wizard mode
+  };
+
   if (currentStep === 'result') {
     return (
       <GenogramResult 
         genogramData={genogramData}
         mermaidCode={mermaidCode}
+        onPersonAction={handlePersonAction}
         onReset={() => {
           setCurrentStep('welcome');
           setMermaidCode('');

@@ -1,4 +1,5 @@
 import React from 'react';
+import PersonContextMenu from './PersonContextMenu';
 
 type GenogramNode = {
   id: string;
@@ -23,9 +24,10 @@ type GenogramData = {
 
 type SimpleGenogramRendererProps = {
   data: GenogramData;
+  onPersonAction?: (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => void;
 };
 
-const SimpleGenogramRenderer = ({ data }: SimpleGenogramRendererProps) => {
+const SimpleGenogramRenderer = ({ data, onPersonAction }: SimpleGenogramRendererProps) => {
   const { nodes, lines } = data;
   
   // Calculate SVG dimensions based on node positions
@@ -87,8 +89,14 @@ const SimpleGenogramRenderer = ({ data }: SimpleGenogramRendererProps) => {
     const isCircle = node.shape === 'circle';
     const isSquare = node.shape === 'rect' || node.shape === 'square';
     
-    return (
-      <g key={node.id}>
+    const handlePersonAction = (action: 'addPartner' | 'addChild' | 'edit' | 'delete') => {
+      if (onPersonAction) {
+        onPersonAction(node.id, action);
+      }
+    };
+
+    const PersonShape = () => (
+      <>
         {isCircle ? (
           <circle
             cx={node.x}
@@ -97,6 +105,7 @@ const SimpleGenogramRenderer = ({ data }: SimpleGenogramRendererProps) => {
             fill="#fce7f3"
             stroke="#ec4899"
             strokeWidth="2"
+            className="cursor-pointer hover:opacity-80"
           />
         ) : isSquare ? (
           <rect
@@ -107,6 +116,7 @@ const SimpleGenogramRenderer = ({ data }: SimpleGenogramRendererProps) => {
             fill="#e6f3ff"
             stroke="#2563eb"
             strokeWidth="2"
+            className="cursor-pointer hover:opacity-80"
           />
         ) : null}
         <text
@@ -117,9 +127,34 @@ const SimpleGenogramRenderer = ({ data }: SimpleGenogramRendererProps) => {
           fontSize="14"
           fontWeight="bold"
           fill="#1f2937"
+          className="pointer-events-none"
         >
           {node.name}
         </text>
+      </>
+    );
+    
+    if (!onPersonAction) {
+      // If no action handler, render as before
+      return (
+        <g key={node.id}>
+          <PersonShape />
+        </g>
+      );
+    }
+
+    return (
+      <g key={node.id}>
+        <PersonContextMenu
+          onAddPartner={() => handlePersonAction('addPartner')}
+          onAddChild={() => handlePersonAction('addChild')}
+          onEditPerson={() => handlePersonAction('edit')}
+          onDeletePerson={() => handlePersonAction('delete')}
+        >
+          <g>
+            <PersonShape />
+          </g>
+        </PersonContextMenu>
       </g>
     );
   };

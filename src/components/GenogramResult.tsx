@@ -26,9 +26,10 @@ type GenogramResultProps = {
   genogramData?: GenogramLayoutResult | GenogramInput | GenogramBackendData | null;
   mermaidCode?: string;
   onReset: () => void;
+  onPersonAction?: (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => void;
 };
 
-const GenogramResult = ({ genogramData, mermaidCode, onReset }: GenogramResultProps) => {
+const GenogramResult = ({ genogramData, mermaidCode, onReset, onPersonAction }: GenogramResultProps) => {
   console.log('Rendering genogram with data:', genogramData);
   
   // Determine which data to use and process it
@@ -87,7 +88,10 @@ const GenogramResult = ({ genogramData, mermaidCode, onReset }: GenogramResultPr
         
         <CardContent>
           <div className="bg-white rounded-lg border p-6 mb-6 min-h-[500px] flex items-center justify-center overflow-auto">
-            <SimpleGenogramRenderer data={dataToRender} />
+            <SimpleGenogramRenderer 
+              data={dataToRender} 
+              onPersonAction={onPersonAction}
+            />
           </div>
 
           <div className="flex justify-center">
