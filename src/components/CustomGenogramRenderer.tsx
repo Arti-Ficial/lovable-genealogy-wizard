@@ -7,6 +7,7 @@ type Person = {
   gender: 'male' | 'female';
   x: number;
   y: number;
+  generation?: number;
 };
 
 type Connection = {
@@ -70,25 +71,101 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
       }
     });
     
-    // Auto-layout positions
-    const layoutPeople = (people: Person[]) => {
-      const centerX = 400;
-      const centerY = 300;
-      const spacing = 150;
+    // Create hierarchical layout
+    const layoutPeople = (people: Person[], connections: Connection[]) => {
+      // Create adjacency lists for parent-child relationships
+      const childrenOf: { [key: string]: string[] } = {};
+      const parentsOf: { [key: string]: string[] } = {};
       
-      people.forEach((person, index) => {
-        const angle = (index * 2 * Math.PI) / people.length;
-        const radius = Math.max(100, people.length * 30);
-        
-        person.x = centerX + Math.cos(angle) * radius;
-        person.y = centerY + Math.sin(angle) * radius;
+      connections.forEach(conn => {
+        if (conn.type === 'parent-child') {
+          if (!childrenOf[conn.from]) childrenOf[conn.from] = [];
+          if (!parentsOf[conn.to]) parentsOf[conn.to] = [];
+          
+          childrenOf[conn.from].push(conn.to);
+          parentsOf[conn.to].push(conn.from);
+        }
       });
       
-      return people;
+      // Assign generations (0 = root, higher numbers = deeper generations)
+      const generations: { [key: string]: number } = {};
+      const visited = new Set<string>();
+      
+      // Find root nodes (people with no parents)
+      const roots = people.filter(person => !parentsOf[person.id] || parentsOf[person.id].length === 0);
+      
+      // If no clear roots, use the first person as root
+      if (roots.length === 0 && people.length > 0) {
+        roots.push(people[0]);
+      }
+      
+      // BFS to assign generations
+      const queue: { id: string; generation: number }[] = [];
+      roots.forEach(root => {
+        generations[root.id] = 0;
+        queue.push({ id: root.id, generation: 0 });
+        visited.add(root.id);
+      });
+      
+      while (queue.length > 0) {
+        const { id, generation } = queue.shift()!;
+        
+        if (childrenOf[id]) {
+          childrenOf[id].forEach(childId => {
+            if (!visited.has(childId)) {
+              generations[childId] = generation + 1;
+              queue.push({ id: childId, generation: generation + 1 });
+              visited.add(childId);
+            }
+          });
+        }
+      }
+      
+      // Assign generation 0 to any unvisited nodes
+      people.forEach(person => {
+        if (generations[person.id] === undefined) {
+          generations[person.id] = 0;
+        }
+      });
+      
+      // Group people by generation
+      const generationGroups: { [key: number]: Person[] } = {};
+      people.forEach(person => {
+        const gen = generations[person.id];
+        if (!generationGroups[gen]) generationGroups[gen] = [];
+        generationGroups[gen].push({ ...person, generation: gen });
+      });
+      
+      // Layout parameters
+      const startY = 100;
+      const generationSpacing = 150;
+      const personSpacing = 180;
+      const svgWidth = 800;
+      
+      // Position people within each generation
+      Object.keys(generationGroups).forEach(genKey => {
+        const gen = parseInt(genKey);
+        const genPeople = generationGroups[gen];
+        const genY = startY + (gen * generationSpacing);
+        
+        // Center the generation horizontally
+        const totalWidth = (genPeople.length - 1) * personSpacing;
+        const startX = (svgWidth - totalWidth) / 2;
+        
+        genPeople.forEach((person, index) => {
+          person.x = startX + (index * personSpacing);
+          person.y = genY;
+        });
+      });
+      
+      return people.map(person => {
+        const updatedPerson = generationGroups[generations[person.id]]?.find(p => p.id === person.id);
+        return updatedPerson || person;
+      });
     };
     
     return {
-      people: layoutPeople(people),
+      people: layoutPeople(people, connections),
       connections
     };
   };
@@ -143,6 +220,44 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
     
     if (!fromPerson || !toPerson) return null;
     
+    // For parent-child relationships, draw L-shaped connections
+    if (connection.type === 'parent-child') {
+      const midY = fromPerson.y + (toPerson.y - fromPerson.y) / 2;
+      
+      return (
+        <g>
+          {/* Vertical line from parent down */}
+          <line
+            x1={fromPerson.x}
+            y1={fromPerson.y + 40}
+            x2={fromPerson.x}
+            y2={midY}
+            stroke="#6b7280"
+            strokeWidth="2"
+          />
+          {/* Horizontal line across */}
+          <line
+            x1={fromPerson.x}
+            y1={midY}
+            x2={toPerson.x}
+            y2={midY}
+            stroke="#6b7280"
+            strokeWidth="2"
+          />
+          {/* Vertical line to child */}
+          <line
+            x1={toPerson.x}
+            y1={midY}
+            x2={toPerson.x}
+            y2={toPerson.y - 40}
+            stroke="#6b7280"
+            strokeWidth="2"
+          />
+        </g>
+      );
+    }
+    
+    // For other relationships, draw straight lines
     return (
       <line
         x1={fromPerson.x}
@@ -155,8 +270,10 @@ const CustomGenogramRenderer = ({ mermaidCode }: CustomGenogramRendererProps) =>
     );
   };
   
+  // Calculate dynamic SVG dimensions based on content
+  const maxY = Math.max(...people.map(p => p.y)) + 100;
   const svgWidth = 800;
-  const svgHeight = 600;
+  const svgHeight = Math.max(600, maxY);
   
   return (
     <div className="w-full h-full flex items-center justify-center">
