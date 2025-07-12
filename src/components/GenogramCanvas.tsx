@@ -12,6 +12,20 @@ type GenogramCanvasProps = {
 };
 
 const GenogramCanvas = ({ people, personalInfo, genogramData, onPersonAction, onRelationshipAction }: GenogramCanvasProps) => {
+  // Always show the ego person as a visible, clickable node
+  const egoData = {
+    nodes: [{
+      id: 'ego',
+      name: personalInfo.name,
+      shape: personalInfo.gender === 'male' ? 'rect' : 'circle' as 'circle' | 'rect',
+      x: 400, // Center position
+      y: 300,
+      isEgo: true
+    }],
+    lines: []
+  };
+
+  // If we have genogram data from API, show that instead
   if (people.length > 0 && genogramData) {
     return (
       <SimpleGenogramRenderer 
@@ -22,34 +36,14 @@ const GenogramCanvas = ({ people, personalInfo, genogramData, onPersonAction, on
     );
   }
 
-  if (people.length > 0) {
-    return (
-      <div className="text-center space-y-4">
-        <div className="text-lg font-semibold text-gray-700">
-          {people.length + 1} Personen hinzugefügt
-        </div>
-        <div className="text-sm text-gray-500">
-          Das Layout wird berechnet...
-        </div>
-        <div className="flex flex-wrap justify-center gap-3 mt-4">
-          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-            {personalInfo.name} (Sie)
-          </div>
-          {people.map(person => (
-            <div key={person.id} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
-              {person.name}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
+  // Always show the ego person (even if no other family members added yet)
   return (
-    <div className="text-center text-gray-500">
-      <FamilyIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-      <p className="text-lg">Fügen Sie Familienmitglieder hinzu</p>
-      <p className="text-sm">Klicken Sie mit der rechten Maustaste auf eine Person, um neue Familienmitglieder hinzuzufügen</p>
+    <div className="w-full h-full flex items-center justify-center">
+      <SimpleGenogramRenderer 
+        data={egoData}
+        onPersonAction={onPersonAction}
+        onRelationshipAction={onRelationshipAction}
+      />
     </div>
   );
 };

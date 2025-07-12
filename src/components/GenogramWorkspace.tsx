@@ -118,11 +118,6 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
             />
           </div>
 
-          <GenerateButton
-            isGenerating={genogramAPI.isGenerating}
-            onGenerate={generateGenogramData}
-            buttonText="Genogramm erstellen"
-          />
         </CardContent>
       </Card>
 
