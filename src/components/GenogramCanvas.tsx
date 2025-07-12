@@ -1,25 +1,31 @@
 
 import React from 'react';
-import { Person, PersonalInfo } from '@/types/genogram';
+import { Person, PersonalInfo, RelationshipStatus } from '@/types/genogram';
 import PersonSymbol from './PersonSymbol';
 import PersonContextMenu from './PersonContextMenu';
 
-import ConnectionLines from './ConnectionLines';
+import ImprovedConnectionLines from './ImprovedConnectionLines';
 
 type GenogramCanvasProps = {
   people: Person[];
   personalInfo: PersonalInfo;
   onPersonAction?: (personId: string, action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') => void;
+  onRelationshipClick?: (fromId: string, toId: string, status: RelationshipStatus) => void;
 };
 
-const GenogramCanvas = ({ people, personalInfo, onPersonAction }: GenogramCanvasProps) => {
+const GenogramCanvas = ({ people, personalInfo, onPersonAction, onRelationshipClick }: GenogramCanvasProps) => {
   const centerX = 400;
   const centerY = 200;
 
   return (
     <div className="relative bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 min-h-[500px] overflow-hidden">
       {/* Connection lines */}
-      <ConnectionLines people={people} centerX={centerX} centerY={centerY} />
+      <ImprovedConnectionLines 
+        people={people} 
+        centerX={centerX} 
+        centerY={centerY}
+        onRelationshipClick={onRelationshipClick}
+      />
       
       {/* Central person (self) */}
       <div className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{ left: centerX, top: centerY }}>

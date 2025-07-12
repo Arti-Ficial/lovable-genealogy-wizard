@@ -127,18 +127,26 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
   const getPositionForRelationship = (relationship: string) => {
     const baseX = 400;
     const baseY = 200;
+    const levelSpacing = 120;  // Vertikaler Abstand zwischen Generationen
+    const personSpacing = 150; // Horizontaler Abstand zwischen Personen
+    
+    // Zähle bereits existierende Personen dieser Beziehungsart
+    const existingOfSameType = people.filter(p => p.relationship === relationship);
+    const siblingOffset = existingOfSameType.length * personSpacing;
     
     switch (relationship) {
       case 'mother':
-        return { x: baseX - 150, y: baseY - 100 };
+        return { x: baseX - 100, y: baseY - levelSpacing };
       case 'father':
-        return { x: baseX + 150, y: baseY - 100 };
+        return { x: baseX + 100, y: baseY - levelSpacing };
       case 'partner':
         return { x: baseX + 200, y: baseY };
       case 'sibling':
-        return { x: baseX - 200, y: baseY };
+        // Geschwister nebeneinander positionieren
+        return { x: baseX - 250 - siblingOffset, y: baseY };
       case 'child':
-        return { x: baseX, y: baseY + 150 };
+        // Kinder nebeneinander unter den Eltern
+        return { x: baseX - 100 + siblingOffset, y: baseY + levelSpacing };
       default:
         return { x: baseX, y: baseY };
     }
@@ -327,9 +335,24 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
   const handleRelationshipStatusSave = (newStatus: RelationshipStatus) => {
     if (!currentRelationshipEdit) return;
     
-    // TODO: Update the relationship status in the data
-    // This would need to be implemented to actually update the relationship data
-    console.log('Updating relationship status to:', newStatus);
+    // Update der Beziehungsstatus in den Daten
+    const { fromId, toId } = currentRelationshipEdit;
+    
+    setPeople(prev => prev.map(person => {
+      // Update für Partner-Beziehungen
+      if ((fromId === 'ego' && person.id === toId && person.relationship === 'partner') ||
+          (toId === 'ego' && person.id === fromId && person.relationship === 'partner')) {
+        return { ...person, relationshipStatus: newStatus };
+      }
+      
+      // Update für Eltern-Beziehungen
+      if ((person.id === fromId || person.id === toId) && 
+          (person.relationship === 'mother' || person.relationship === 'father')) {
+        return { ...person, relationshipStatus: newStatus };
+      }
+      
+      return person;
+    }));
     
     toast({
       title: "Beziehung aktualisiert",
@@ -461,6 +484,25 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
             people={people}
             personalInfo={personalInfo}
             onPersonAction={handlePersonAction}
+            onRelationshipClick={(fromId, toId, status) => {
+              // Finde die Namen der beteiligten Personen
+              const fromPerson = fromId === 'ego' ? { name: personalInfo.name } : people.find(p => p.id === fromId);
+              const toPerson = toId === 'ego' ? { name: personalInfo.name } : people.find(p => p.id === toId);
+              
+              if (fromPerson && toPerson) {
+                setCurrentRelationshipEdit({
+                  lineId: `${fromId}-${toId}`,
+                  fromId,
+                  toId,
+                  currentStatus: status,
+                  personNames: {
+                    from: fromPerson.name,
+                    to: toPerson.name
+                  }
+                });
+                setRelationshipModalOpen(true);
+              }
+            }}
           />
 
           <GenerateButton
