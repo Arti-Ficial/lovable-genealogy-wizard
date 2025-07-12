@@ -126,42 +126,99 @@ const GenogramResult = ({ genogramData, mermaidCode, onReset }: GenogramResultPr
 
     // Add relationship line based on type
     if (relationship === 'partner') {
-      newLines.push({
-        fromX: 0, fromY: 0, toX: 0, toY: 0,
-        type: 'partner',
-        relationshipStatus: 'married',
-        fromId: targetPersonId,
-        toId: newPerson.id,
-        id: `${targetPersonId}-${newPerson.id}`
-      });
+      // Create a partnership dummy node to properly handle the relationship
+      const partnershipDummyId = `partner-${targetPersonId}-${newPerson.id}`;
+      const targetPerson = dataToRender.nodes.find(n => n.id === targetPersonId);
+      
+      if (targetPerson) {
+        // Add dummy node for partnership
+        const dummyNode = {
+          id: partnershipDummyId,
+          name: '',
+          shape: 'rect' as const,
+          x: (targetPerson.x + newPerson.x) / 2,
+          y: (targetPerson.y + newPerson.y) / 2,
+          isEgo: false,
+          isDummy: true
+        };
+        
+        newNodes.push(dummyNode as any);
+        
+        // Add edges to connect both persons to the dummy node
+        newLines.push({
+          fromX: 0, fromY: 0, toX: 0, toY: 0,
+          type: 'partner',
+          relationshipStatus: 'married',
+          fromId: targetPersonId,
+          toId: partnershipDummyId,
+          id: `${targetPersonId}-${partnershipDummyId}`
+        });
+        
+        newLines.push({
+          fromX: 0, fromY: 0, toX: 0, toY: 0,
+          type: 'partner',
+          relationshipStatus: 'married',
+          fromId: newPerson.id,
+          toId: partnershipDummyId,
+          id: `${newPerson.id}-${partnershipDummyId}`
+        });
+      }
     } else if (relationship === 'child') {
-      newLines.push({
-        fromX: 0, fromY: 0, toX: 0, toY: 0,
-        type: 'parent-child',
-        fromId: targetPersonId,
-        toId: newPerson.id,
-        id: `${targetPersonId}-${newPerson.id}`
-      });
+      // Find if target person has a partner and create proper family structure
+      const targetPerson = dataToRender.nodes.find(n => n.id === targetPersonId);
+      const partnerLine = dataToRender.lines.find(l => 
+        (l.fromId === targetPersonId || l.toId === targetPersonId) && l.type === 'partner'
+      );
+      
+      if (partnerLine && targetPerson) {
+        // Parent has a partner - connect child to existing partnership dummy node
+        const partnershipDummyId = partnerLine.fromId?.startsWith('partner-') ? partnerLine.fromId : partnerLine.toId;
+        
+        if (partnershipDummyId) {
+          newLines.push({
+            fromX: 0, fromY: 0, toX: 0, toY: 0,
+            type: 'parent-child',
+            fromId: partnershipDummyId,
+            toId: newPerson.id,
+            id: `${partnershipDummyId}-${newPerson.id}`
+          });
+        }
+      } else {
+        // Single parent - create direct parent-child relationship
+        newLines.push({
+          fromX: 0, fromY: 0, toX: 0, toY: 0,
+          type: 'parent-child',
+          fromId: targetPersonId,
+          toId: newPerson.id,
+          id: `${targetPersonId}-${newPerson.id}`
+        });
+      }
     }
 
-    // Re-calculate layout with new data
-    const backendFormat = {
-      nodes: newNodes.map(node => ({
+    // Convert to backend format and re-calculate layout
+    const backendFormat = createBackendFormat(newNodes, newLines);
+    return processBackendGenogramData(backendFormat);
+  };
+
+  const createBackendFormat = (nodes: any[], lines: any[]) => {
+    return {
+      nodes: nodes.map(node => ({
         id: node.id,
         label: node.name,
         shape: node.shape === 'circle' ? 'circle' : 'square',
         width: 120,
         height: 60,
-        isEgo: node.isEgo
+        isEgo: node.isEgo,
+        isDummy: node.isDummy || false,
+        isDeceased: node.isDeceased || false
       })),
-      edges: newLines.map(line => ({
+      edges: lines.map(line => ({
         from: line.fromId || '',
         to: line.toId || '',
-        type: line.type || 'partner'
+        type: line.type || 'partner',
+        relationshipStatus: line.relationshipStatus || 'married'
       }))
     };
-
-    return processBackendGenogramData(backendFormat);
   };
 
   const updatePerson = (personId: string, updatedData: Partial<Person>): GenogramLayoutResult => {
