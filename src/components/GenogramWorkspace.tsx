@@ -135,7 +135,7 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
     const egoX = 400;
     const egoY = 200;
     const generationSpacing = 150;
-    const personSpacing = 200;
+    const personSpacing = 180;  // Reduced spacing to prevent overlaps
     
     return updatedPeople.map(person => {
       if (person.relationship !== groupType) return person;
@@ -145,16 +145,20 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
       const totalInGroup = sameGroupPeople.length;
       
       if (groupType === 'sibling') {
-        // Geschwister horizontal zentriert auf gleicher Ebene
-        const siblingGroupWidth = totalInGroup * personSpacing;
-        const siblingStartX = egoX - (siblingGroupWidth / 2) + (personSpacing / 2);
+        // Geschwister horizontal verteilt, EGO immer in der Mitte
+        const egoIndex = Math.floor(totalInGroup / 2);
+        const adjustedIndex = personIndex < egoIndex ? personIndex : personIndex + 1;
+        const totalWithEgo = totalInGroup + 1;
+        
+        const siblingGroupWidth = totalWithEgo * personSpacing;
+        const startX = egoX - (siblingGroupWidth / 2) + (personSpacing / 2);
         
         return {
           ...person,
-          position: { x: siblingStartX + (personIndex * personSpacing), y: egoY }
+          position: { x: startX + (adjustedIndex * personSpacing), y: egoY }
         };
       } else if (groupType === 'child') {
-        // Kinder horizontal zentriert unter Eltern
+        // Kinder horizontal zentriert unter Eltern-Mittellinie
         const partner = updatedPeople.find(p => p.relationship === 'partner');
         const parentCenterX = partner ? (egoX + partner.position.x) / 2 : egoX;
         
@@ -175,45 +179,49 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
     const egoX = 400;
     const egoY = 200;
     const generationSpacing = 150;  // Vertikaler Abstand zwischen Generationen
-    const personSpacing = 200;      // Horizontaler Abstand zwischen Personen
-    const partnerSpacing = 250;     // Abstand zu Partnern
+    const personSpacing = 180;      // Reduzierter horizontaler Abstand
+    const partnerSpacing = 200;     // Reduzierter Abstand zu Partnern für horizontale Linie
     
     switch (relationship) {
       case 'mother':
-        // Mutter links von der Mitte der Elternebene
-        return { x: egoX - 125, y: egoY - generationSpacing };
+        // Mutter links der Elternebene - exakt horizontal zu Vater
+        return { x: egoX - 100, y: egoY - generationSpacing };
       
       case 'father':
-        // Vater rechts von der Mitte der Elternebene
-        return { x: egoX + 125, y: egoY - generationSpacing };
+        // Vater rechts der Elternebene - exakt horizontal zu Mutter  
+        return { x: egoX + 100, y: egoY - generationSpacing };
       
       case 'partner':
-        // Partner rechts vom Ego auf gleicher Höhe
+        // Partner rechts vom Ego auf EXAKT gleicher Höhe für horizontale Linie
         return { x: egoX + partnerSpacing, y: egoY };
       
       case 'sibling':
-        // Geschwister auf gleicher Ebene wie Ego, horizontal zentriert unter Eltern
+        // Geschwister: EGO bleibt zentral, Geschwister drum herum
         const existingSiblings = people.filter(p => p.relationship === 'sibling');
         const siblingIndex = existingSiblings.length;
         const totalSiblings = siblingIndex + 1; // +1 für das neue Geschwister
+        const totalWithEgo = totalSiblings + 1; // +1 für EGO
         
-        // Berechne die Startposition für die Geschwistergruppe (zentriert unter Eltern)
-        const siblingGroupWidth = totalSiblings * personSpacing;
-        const siblingStartX = egoX - (siblingGroupWidth / 2) + (personSpacing / 2);
+        // EGO bleibt in der Mitte, Geschwister werden links und rechts verteilt
+        const egoPosition = Math.floor(totalWithEgo / 2);
+        let adjustedIndex = siblingIndex < egoPosition ? siblingIndex : siblingIndex + 1;
         
-        return { x: siblingStartX + (siblingIndex * personSpacing), y: egoY };
+        const groupWidth = totalWithEgo * personSpacing;
+        const startX = egoX - (groupWidth / 2) + (personSpacing / 2);
+        
+        return { x: startX + (adjustedIndex * personSpacing), y: egoY };
       
       case 'child':
-        // Kinder unter den Eltern, horizontal zentriert
+        // Kinder unter dem Mittelpunkt der Eltern-Linie
         const existingChildren = people.filter(p => p.relationship === 'child');
         const childIndex = existingChildren.length;
-        const totalChildren = childIndex + 1; // +1 für das neue Kind
+        const totalChildren = childIndex + 1;
         
-        // Finde Partner des Ego
+        // Berechne Mittelpunkt zwischen EGO und Partner
         const partner = people.find(p => p.relationship === 'partner');
         const parentCenterX = partner ? (egoX + partner.position.x) / 2 : egoX;
         
-        // Berechne die Startposition für die Kindergruppe (zentriert unter Eltern)
+        // Zentriere Kinder unter dem Eltern-Mittelpunkt
         const childGroupWidth = totalChildren * personSpacing;
         const childStartX = parentCenterX - (childGroupWidth / 2) + (personSpacing / 2);
         

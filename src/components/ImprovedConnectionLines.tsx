@@ -63,18 +63,43 @@ const ImprovedConnectionLines = ({
     if (!['mother', 'father', 'child'].includes(person.relationship)) return null;
     
     if (person.relationship === 'mother' || person.relationship === 'father') {
-      // Direkte Linie von Eltern zum Ego
+      // Rechtwinklige Verbindung von Eltern zum Ego
+      const parentCenterY = person.position.y;
+      const connectionY = parentCenterY + (centerY - parentCenterY) / 2; // Mittelpunkt
+      
       return (
-        <line
-          key={`parent-child-${person.id}`}
-          x1={person.position.x}
-          y1={person.position.y}
-          x2={centerX}
-          y2={centerY}
-          stroke="#6B7280"
-          strokeWidth="2"
-          className="opacity-70"
-        />
+        <g key={`parent-child-${person.id}`}>
+          {/* Vertikale Linie vom Elternteil nach unten */}
+          <line
+            x1={person.position.x}
+            y1={person.position.y}
+            x2={person.position.x}
+            y2={connectionY}
+            stroke="#6B7280"
+            strokeWidth="2"
+            className="opacity-70"
+          />
+          {/* Horizontale Linie zum Ego */}
+          <line
+            x1={person.position.x}
+            y1={connectionY}
+            x2={centerX}
+            y2={connectionY}
+            stroke="#6B7280"
+            strokeWidth="2"
+            className="opacity-70"
+          />
+          {/* Vertikale Linie zum Ego */}
+          <line
+            x1={centerX}
+            y1={connectionY}
+            x2={centerX}
+            y2={centerY}
+            stroke="#6B7280"
+            strokeWidth="2"
+            className="opacity-70"
+          />
+        </g>
       );
     }
     
@@ -82,7 +107,6 @@ const ImprovedConnectionLines = ({
       // Rechtwinklige Verbindung für Kinder
       const partner = people.find(p => p.relationship === 'partner');
       const parentCenterX = partner ? (centerX + partner.position.x) / 2 : centerX;
-      const parentY = centerY;
       const childConnectionY = centerY + 75; // Mittelpunkt zwischen Eltern und Kindern
       
       return (
@@ -90,18 +114,18 @@ const ImprovedConnectionLines = ({
           {/* Vertikale Linie von Eltern-Mitte nach unten */}
           <line
             x1={parentCenterX}
-            y1={parentY}
+            y1={centerY}
             x2={parentCenterX}
             y2={childConnectionY}
             stroke="#6B7280"
             strokeWidth="2"
             className="opacity-70"
           />
-          {/* Horizontale "Geschwister"-Linie */}
+          {/* Horizontale Linie zu Kind-Position */}
           <line
-            x1={Math.min(parentCenterX, person.position.x)}
+            x1={parentCenterX}
             y1={childConnectionY}
-            x2={Math.max(parentCenterX, person.position.x)}
+            x2={person.position.x}
             y2={childConnectionY}
             stroke="#6B7280"
             strokeWidth="2"
@@ -131,12 +155,12 @@ const ImprovedConnectionLines = ({
     const parents = people.filter(p => p.relationship === 'mother' || p.relationship === 'father');
     
     if (parents.length > 0) {
-      // Rechtwinklige Verbindung für Geschwister (gleiche Logik wie für Ego)
+      // Rechtwinklige Verbindung für Geschwister
       const parentCenterX = parents.length === 2 ? 
         (parents[0].position.x + parents[1].position.x) / 2 : 
         parents[0].position.x;
       const parentY = parents[0].position.y;
-      const siblingConnectionY = centerY - 75; // Mittelpunkt zwischen Eltern und Geschwister-Ebene
+      const siblingConnectionY = parentY + (centerY - parentY) / 2; // Mittelpunkt zwischen Eltern und Geschwister-Ebene
       
       return (
         <g key={`sibling-connection-${person.id}`}>
@@ -184,19 +208,41 @@ const ImprovedConnectionLines = ({
       );
     }
     
-    // Fallback: Direkte Linie zum Ego
+    // Fallback: Rechtwinklige Verbindung ohne Eltern
+    const connectionY = centerY - 50;
     return (
-      <line
-        key={`sibling-ego-${person.id}`}
-        x1={centerX}
-        y1={centerY}
-        x2={person.position.x}
-        y2={person.position.y}
-        stroke="#6B7280"
-        strokeWidth="2"
-        strokeDasharray="8,4"
-        className="opacity-60"
-      />
+      <g key={`sibling-ego-${person.id}`}>
+        {/* Horizontale Linie zwischen Geschwister und Ego */}
+        <line
+          x1={Math.min(centerX, person.position.x)}
+          y1={connectionY}
+          x2={Math.max(centerX, person.position.x)}
+          y2={connectionY}
+          stroke="#6B7280"
+          strokeWidth="2"
+          className="opacity-60"
+        />
+        {/* Vertikale Linie zum Geschwister */}
+        <line
+          x1={person.position.x}
+          y1={connectionY}
+          x2={person.position.x}
+          y2={person.position.y}
+          stroke="#6B7280"
+          strokeWidth="2"
+          className="opacity-60"
+        />
+        {/* Vertikale Linie zum Ego */}
+        <line
+          x1={centerX}
+          y1={connectionY}
+          x2={centerX}
+          y2={centerY}
+          stroke="#6B7280"
+          strokeWidth="2"
+          className="opacity-60"
+        />
+      </g>
     );
   };
 
