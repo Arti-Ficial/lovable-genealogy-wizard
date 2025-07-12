@@ -303,15 +303,17 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
     setCurrentRelationshipEdit(null);
   };
 
-  const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => {
+  const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete' | 'add-partner' | 'add-child' | 'delete-person') => {
     console.log('Person action:', action, 'for node:', nodeId);
     switch (action) {
       case 'addPartner':
+      case 'add-partner':
         setSelectedPersonForAction(nodeId);
         setCurrentRelationship('partner');
         setModalOpen(true);
         break;
       case 'addChild':
+      case 'add-child':
         setSelectedPersonForAction(nodeId);
         setCurrentRelationship('child');
         setModalOpen(true);
@@ -324,6 +326,7 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         }
         break;
       case 'delete':
+      case 'delete-person':
         setPersonToDelete(nodeId);
         setDeleteConfirmOpen(true);
         break;
