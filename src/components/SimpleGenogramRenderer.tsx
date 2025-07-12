@@ -36,16 +36,22 @@ type SimpleGenogramRendererProps = {
 const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: SimpleGenogramRendererProps) => {
   const { nodes, lines } = data;
   
-  // Calculate SVG dimensions based on node positions
-  const margin = 100;
-  const nodeSize = 80;
+  // Calculate SVG dimensions with generous margins to prevent clipping
+  const margin = 150;     // Increased margin to prevent clipping
+  const nodeSize = 120;   // Account for larger node sizes from dagre
+  
+  // Handle empty nodes case
+  if (nodes.length === 0) {
+    return <div className="w-full h-full flex items-center justify-center text-gray-500">Keine Daten zum Anzeigen</div>;
+  }
+  
   const minX = Math.min(...nodes.map(n => n.x)) - nodeSize/2 - margin;
   const maxX = Math.max(...nodes.map(n => n.x)) + nodeSize/2 + margin;
   const minY = Math.min(...nodes.map(n => n.y)) - nodeSize/2 - margin;
   const maxY = Math.max(...nodes.map(n => n.y)) + nodeSize/2 + margin;
   
-  const svgWidth = maxX - minX;
-  const svgHeight = maxY - minY;
+  const svgWidth = Math.max(800, maxX - minX);   // Minimum width to prevent too small SVGs
+  const svgHeight = Math.max(600, maxY - minY);  // Minimum height to prevent too small SVGs
   
   // Adjust coordinates to SVG coordinate system
   const adjustedNodes = nodes.map(node => ({
@@ -200,7 +206,7 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
   };
 
   const PersonNode = ({ node }: { node: GenogramNode }) => {
-    const size = 80;
+    const size = 120;  // Larger size to match dagre configuration
     const halfSize = size / 2;
     const isCircle = node.shape === 'circle';
     const isSquare = node.shape === 'rect' || node.shape === 'square';

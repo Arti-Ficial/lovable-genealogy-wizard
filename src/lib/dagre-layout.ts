@@ -76,13 +76,14 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
   // Create a new directed graph
   const g = new dagre.graphlib.Graph();
   
-  // Set graph attributes
+  // Set graph attributes for proper genogram layout
   g.setGraph({
-    rankdir: 'TB', // Top to bottom layout
-    nodesep: 100,  // Horizontal spacing between nodes
-    ranksep: 120,  // Vertical spacing between ranks
-    marginx: 50,
-    marginy: 50
+    rankdir: 'TB',    // Top to bottom layout (grandparents -> parents -> children)
+    nodesep: 150,     // More horizontal spacing between nodes
+    ranksep: 200,     // More vertical spacing between generations
+    marginx: 100,     // More margin for proper spacing
+    marginy: 100,
+    align: 'UL'       // Align upper left for consistent positioning
   });
   
   // Set default edge and node attributes
@@ -93,8 +94,8 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
   input.nodes.forEach(node => {
     g.setNode(node.id, {
       label: node.isDummy ? '' : node.label,
-      width: node.isDummy ? 1 : (node.width || 80),
-      height: node.isDummy ? 1 : (node.height || 80),
+      width: node.isDummy ? 10 : 120,  // Consistent sizing for proper layout
+      height: node.isDummy ? 10 : 80,  // Consistent sizing for proper layout
       shape: node.isDummy ? 'rect' : (node.shape === 'square' ? 'rect' : 'circle')
     });
   });

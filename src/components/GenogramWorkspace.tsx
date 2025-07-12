@@ -589,7 +589,18 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
     }
   };
 
-  // Entfernt - nach "Layout finalisieren" wird direkt zum GenogramResult gewechselt
+  // If we have generated genogram data, show the result
+  if (genogramData) {
+    return (
+      <GenogramResult
+        genogramData={genogramData}
+        mermaidCode={mermaidCode || undefined}
+        onReset={handleReset}
+        onPersonAction={handlePersonAction}
+        onRelationshipAction={handleRelationshipAction}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
@@ -604,30 +615,73 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
         </CardHeader>
         
         <CardContent>
-          <GenogramCanvas
-            people={people}
-            personalInfo={personalInfo}
-            onPersonAction={handlePersonAction}
-            onRelationshipClick={(fromId, toId, status) => {
-              // Finde die Namen der beteiligten Personen
-              const fromPerson = fromId === 'ego' ? { name: personalInfo.name } : people.find(p => p.id === fromId);
-              const toPerson = toId === 'ego' ? { name: personalInfo.name } : people.find(p => p.id === toId);
-              
-              if (fromPerson && toPerson) {
-                setCurrentRelationshipEdit({
-                  lineId: `${fromId}-${toId}`,
-                  fromId,
-                  toId,
-                  currentStatus: status,
-                  personNames: {
-                    from: fromPerson.name,
-                    to: toPerson.name
-                  }
-                });
-                setRelationshipModalOpen(true);
-              }
-            }}
-          />
+          <div className="bg-white rounded-lg border p-6 mb-6 min-h-[500px] flex items-center justify-center overflow-auto">
+            {people.length > 0 ? (
+              <div className="text-center space-y-4">
+                <div className="text-lg font-semibold text-gray-700">
+                  {people.length + 1} Personen hinzugefügt
+                </div>
+                <div className="text-sm text-gray-500">
+                  Das finale Genogramm-Layout wird nach dem Klick auf "Genogramm erstellen" berechnet.
+                </div>
+                <div className="flex flex-wrap justify-center gap-3 mt-4">
+                  <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                    {personalInfo.name} (Sie)
+                  </div>
+                  {people.map(person => (
+                    <div key={person.id} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+                      {person.name}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center text-gray-500">
+                <FamilyIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg">Fügen Sie Familienmitglieder hinzu</p>
+                <p className="text-sm">Beginnen Sie mit einem Partner, Elternteil oder Kind</p>
+              </div>
+            )}
+          </div>
+
+          {/* Action buttons for adding family members */}
+          <div className="mb-6">
+            <div className="text-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-700">Familienmitglieder hinzufügen</h3>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              <button
+                onClick={() => handleAddPerson('partner')}
+                className="bg-pink-100 hover:bg-pink-200 text-pink-800 px-4 py-3 rounded-lg transition-colors font-medium text-sm"
+              >
+                Partner/in
+              </button>
+              <button
+                onClick={() => handleAddPerson('child')}
+                className="bg-green-100 hover:bg-green-200 text-green-800 px-4 py-3 rounded-lg transition-colors font-medium text-sm"
+              >
+                Kind
+              </button>
+              <button
+                onClick={() => handleAddPerson('father')}
+                className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-3 rounded-lg transition-colors font-medium text-sm"
+              >
+                Vater
+              </button>
+              <button
+                onClick={() => handleAddPerson('mother')}
+                className="bg-purple-100 hover:bg-purple-200 text-purple-800 px-4 py-3 rounded-lg transition-colors font-medium text-sm"
+              >
+                Mutter
+              </button>
+              <button
+                onClick={() => handleAddPerson('sibling')}
+                className="bg-orange-100 hover:bg-orange-200 text-orange-800 px-4 py-3 rounded-lg transition-colors font-medium text-sm"
+              >
+                Geschwister
+              </button>
+            </div>
+          </div>
 
           <GenerateButton
             isGenerating={isGenerating}
