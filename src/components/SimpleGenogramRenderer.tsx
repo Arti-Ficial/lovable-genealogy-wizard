@@ -31,10 +31,9 @@ type SimpleGenogramRendererProps = {
   data: GenogramData;
   onPersonAction?: (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => void;
   onRelationshipAction?: (lineId: string, fromId: string, toId: string, action: 'edit') => void;
-  readonly?: boolean;
 };
 
-const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction, readonly = false }: SimpleGenogramRendererProps) => {
+const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: SimpleGenogramRendererProps) => {
   const { nodes, lines } = data;
   
   // Calculate SVG dimensions based on node positions
@@ -149,7 +148,7 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction, re
     const isParentChildLine = line.type === 'parent-child';
     const isGenerationConnector = line.type === 'generation-connector';
     const isSiblingConnector = line.type === 'sibling-connector';
-    const isClickable = isPartnerLine && !!onRelationshipAction && !!line.fromId && !!line.toId && !readonly;
+    const isClickable = isPartnerLine && !!onRelationshipAction && !!line.fromId && !!line.toId;
     
     const handleLineClick = (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -276,8 +275,8 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction, re
       </>
     );
     
-    if (!onPersonAction || readonly) {
-      // If no action handler or readonly mode, render without context menu
+    if (!onPersonAction) {
+      // If no action handler, render as before
       return (
         <g key={node.id}>
           <PersonShape />

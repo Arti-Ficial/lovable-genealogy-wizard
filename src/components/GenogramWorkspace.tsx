@@ -15,15 +15,16 @@ import { Person, PersonalInfo, RelationshipStatus } from '@/types/genogram';
 import PersonModal from './PersonModal';
 import RelationshipEditModal from './RelationshipEditModal';
 import FamilyIcon from './FamilyIcon';
+import GenogramResult from './GenogramResult';
 import GenogramCanvas from './GenogramCanvas';
+import GenerateButton from './GenerateButton';
 import { useToast } from '@/hooks/use-toast';
 
 type GenogramWorkspaceProps = {
   personalInfo: PersonalInfo;
-  onGenogramGenerated?: (genogramData: any, mermaidCode?: string) => void;
 };
 
-const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorkspaceProps) => {
+const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
   const [people, setPeople] = useState<Person[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -38,6 +39,8 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
     personNames: { from: string; to: string };
   } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [mermaidCode, setMermaidCode] = useState<string | null>(null);
+  const [genogramData, setGenogramData] = useState<any>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [personToDelete, setPersonToDelete] = useState<string | null>(null);
   const [selectedPersonForAction, setSelectedPersonForAction] = useState<string | null>(null);
@@ -222,18 +225,14 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
         
         if (result.genogramData) {
           // Neue API-Antwort mit genogramData
-          if (onGenogramGenerated) {
-            onGenogramGenerated(result.genogramData);
-          }
+          setGenogramData(result.genogramData);
           toast({
             title: "Genogramm erfolgreich erstellt!",
             description: "Ihr Genogramm wurde generiert und wird angezeigt.",
           });
         } else if (result.mermaidCode) {
           // Fallback für alte API-Antwort
-          if (onGenogramGenerated) {
-            onGenogramGenerated(null, result.mermaidCode);
-          }
+          setMermaidCode(result.mermaidCode);
           toast({
             title: "Genogramm erfolgreich erstellt!",
             description: "Ihr Genogramm wurde generiert und wird angezeigt.",
@@ -258,6 +257,8 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
   };
 
   const handleReset = () => {
+    setMermaidCode(null);
+    setGenogramData(null);
     setPeople([]);
   };
 
@@ -389,6 +390,18 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
     }
   };
 
+  // If genogram data or mermaid code is available, show the result view
+  if (genogramData || mermaidCode) {
+    return (
+      <GenogramResult 
+        genogramData={genogramData}
+        mermaidCode={mermaidCode} 
+        onReset={handleReset}
+        onPersonAction={handlePersonAction}
+        onRelationshipAction={handleRelationshipAction}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
@@ -409,19 +422,10 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
             onPersonAction={handlePersonAction}
           />
 
-          <div className="mt-8 flex justify-center">
-            <button
-              onClick={generateGenogramData}
-              disabled={isGenerating}
-              className="bg-green-600 hover:bg-green-700 text-white h-14 px-8 text-lg font-semibold rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
-            >
-              {isGenerating ? (
-                "Layout wird finalisiert..."
-              ) : (
-                "Layout finalisieren & speichern"
-              )}
-            </button>
-          </div>
+          <GenerateButton
+            isGenerating={isGenerating}
+            onGenerate={generateGenogramData}
+          />
         </CardContent>
       </Card>
 
