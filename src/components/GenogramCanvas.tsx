@@ -2,6 +2,7 @@
 import React from 'react';
 import { Person, PersonalInfo } from '@/types/genogram';
 import PersonSymbol from './PersonSymbol';
+import PersonContextMenu from './PersonContextMenu';
 
 import ConnectionLines from './ConnectionLines';
 
@@ -22,12 +23,28 @@ const GenogramCanvas = ({ people, personalInfo, onPersonAction }: GenogramCanvas
       
       {/* Central person (self) */}
       <div className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{ left: centerX, top: centerY }}>
-        <div className="bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg">
-          <div className="text-center">
-            <div className="font-semibold text-lg">{personalInfo.name}</div>
-            <div className="text-sm opacity-90">Sie</div>
+        {onPersonAction ? (
+          <PersonContextMenu
+            onAddPartner={() => onPersonAction('ego', 'addPartner')}
+            onAddChild={() => onPersonAction('ego', 'addChild')}
+            onEditPerson={() => onPersonAction('ego', 'edit')}
+            onDeletePerson={() => onPersonAction('ego', 'delete')}
+          >
+            <div className="bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg cursor-pointer hover:bg-blue-700 transition-colors">
+              <div className="text-center">
+                <div className="font-semibold text-lg">{personalInfo.name}</div>
+                <div className="text-sm opacity-90">Sie</div>
+              </div>
+            </div>
+          </PersonContextMenu>
+        ) : (
+          <div className="bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg">
+            <div className="text-center">
+              <div className="font-semibold text-lg">{personalInfo.name}</div>
+              <div className="text-sm opacity-90">Sie</div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
 
