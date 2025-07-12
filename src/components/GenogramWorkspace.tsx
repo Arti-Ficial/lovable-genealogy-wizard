@@ -16,7 +16,7 @@ import PersonModal from './PersonModal';
 import RelationshipEditModal from './RelationshipEditModal';
 import FamilyIcon from './FamilyIcon';
 import GenogramResult from './GenogramResult';
-import GenogramCanvas from './GenogramCanvas';
+import SimpleGenogramRenderer from './SimpleGenogramRenderer';
 import GenerateButton from './GenerateButton';
 import { useToast } from '@/hooks/use-toast';
 
@@ -118,6 +118,7 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
     
     // Reset der Auswahl
     setSelectedPersonForAction(null);
+    setModalOpen(false);
     
     // Sofortiger API-Call für neues Layout
     await updateLayoutFromAPI(updatedPeople);
@@ -509,7 +510,7 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
         break;
       case 'edit':
         // Handle editing of ego person
-        if (nodeId === 'ego') {
+        if (nodeId === 'person-1' || nodeId === '1') {
           toast({
             title: "Info",
             description: "Ihre persönlichen Daten können Sie auf der ersten Seite bearbeiten.",
@@ -517,7 +518,19 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
           return;
         }
         
-        const personToEdit = people.find(p => p.id === nodeId);
+        // Map from n8n ID to local person ID
+        let localPersonId = nodeId;
+        if (nodeId.startsWith('person-') && !nodeId.includes('person-1')) {
+          // Find person by originalId mapping
+          const foundPerson = people.find(p => {
+            // Create a mapping based on the original ID stored in the n8n response
+            const nodeNumber = parseInt(nodeId.split('-')[1]);
+            return p.id && nodeNumber > 1; // Skip ego person (person-1)
+          });
+          localPersonId = foundPerson?.id || nodeId;
+        }
+        
+        const personToEdit = people.find(p => p.id === localPersonId);
         if (personToEdit) {
           setEditingPerson(personToEdit);
           setEditModalOpen(true);
@@ -525,7 +538,7 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
         break;
       case 'delete':
         // Prevent deleting ego person
-        if (nodeId === 'ego') {
+        if (nodeId === 'person-1' || nodeId === '1') {
           toast({
             title: "Nicht möglich",
             description: "Sie können sich selbst nicht löschen.",
@@ -616,13 +629,19 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
         
         <CardContent>
           <div className="bg-white rounded-lg border p-6 mb-6 min-h-[500px] flex items-center justify-center overflow-auto">
-            {people.length > 0 ? (
+            {people.length > 0 && genogramData ? (
+              <SimpleGenogramRenderer 
+                data={genogramData}
+                onPersonAction={handlePersonAction}
+                onRelationshipAction={handleRelationshipAction}
+              />
+            ) : people.length > 0 ? (
               <div className="text-center space-y-4">
                 <div className="text-lg font-semibold text-gray-700">
                   {people.length + 1} Personen hinzugefügt
                 </div>
                 <div className="text-sm text-gray-500">
-                  Das finale Genogramm-Layout wird nach dem Klick auf "Genogramm erstellen" berechnet.
+                  Das Layout wird berechnet...
                 </div>
                 <div className="flex flex-wrap justify-center gap-3 mt-4">
                   <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
@@ -639,49 +658,11 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
               <div className="text-center text-gray-500">
                 <FamilyIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                 <p className="text-lg">Fügen Sie Familienmitglieder hinzu</p>
-                <p className="text-sm">Beginnen Sie mit einem Partner, Elternteil oder Kind</p>
+                <p className="text-sm">Klicken Sie mit der rechten Maustaste auf eine Person, um neue Familienmitglieder hinzuzufügen</p>
               </div>
             )}
           </div>
 
-          {/* Action buttons for adding family members */}
-          <div className="mb-6">
-            <div className="text-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-700">Familienmitglieder hinzufügen</h3>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              <button
-                onClick={() => handleAddPerson('partner')}
-                className="bg-pink-100 hover:bg-pink-200 text-pink-800 px-4 py-3 rounded-lg transition-colors font-medium text-sm"
-              >
-                Partner/in
-              </button>
-              <button
-                onClick={() => handleAddPerson('child')}
-                className="bg-green-100 hover:bg-green-200 text-green-800 px-4 py-3 rounded-lg transition-colors font-medium text-sm"
-              >
-                Kind
-              </button>
-              <button
-                onClick={() => handleAddPerson('father')}
-                className="bg-blue-100 hover:bg-blue-200 text-blue-800 px-4 py-3 rounded-lg transition-colors font-medium text-sm"
-              >
-                Vater
-              </button>
-              <button
-                onClick={() => handleAddPerson('mother')}
-                className="bg-purple-100 hover:bg-purple-200 text-purple-800 px-4 py-3 rounded-lg transition-colors font-medium text-sm"
-              >
-                Mutter
-              </button>
-              <button
-                onClick={() => handleAddPerson('sibling')}
-                className="bg-orange-100 hover:bg-orange-200 text-orange-800 px-4 py-3 rounded-lg transition-colors font-medium text-sm"
-              >
-                Geschwister
-              </button>
-            </div>
-          </div>
 
           <GenerateButton
             isGenerating={isGenerating}

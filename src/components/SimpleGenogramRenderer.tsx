@@ -29,12 +29,56 @@ type GenogramData = {
 
 type SimpleGenogramRendererProps = {
   data: GenogramData;
-  onPersonAction?: (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => void;
+  onPersonAction?: (nodeId: string, action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') => void;
   onRelationshipAction?: (lineId: string, fromId: string, toId: string, action: 'edit') => void;
 };
 
 const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: SimpleGenogramRendererProps) => {
-  const { nodes, lines } = data;
+  // Transform n8n genogram data to our format
+  const transformedData = transformN8nData(data);
+  const { nodes, lines } = transformedData;
+  
+  // Helper function to transform n8n data format
+  function transformN8nData(n8nData: any): GenogramData {
+    if (n8nData.nodes && n8nData.edges) {
+      // n8n format
+      const allNodes = n8nData.nodes.filter((node: any) => !node.isDummy);
+      const nodes: GenogramNode[] = allNodes.map((node: any) => ({
+        id: node.id,
+        name: node.label,
+        shape: node.shape === 'square' ? 'rect' : node.shape,
+        x: node.x || 0,
+        y: node.y || 0,
+        isEgo: node.isEgo || false
+      }));
+      
+      // Create lines from edges
+      const lines: GenogramLine[] = [];
+      n8nData.edges?.forEach((edge: any) => {
+        const fromNode = allNodes.find((n: any) => n.id === edge.from);
+        const toNode = allNodes.find((n: any) => n.id === edge.to);
+        
+        if (fromNode && toNode) {
+          lines.push({
+            fromX: fromNode.x || 0,
+            fromY: fromNode.y || 0,
+            toX: toNode.x || 0,
+            toY: toNode.y || 0,
+            type: edge.type || 'partner',
+            relationshipStatus: edge.relationshipStatus,
+            id: edge.id,
+            fromId: edge.from,
+            toId: edge.to
+          });
+        }
+      });
+      
+      return { nodes, lines };
+    }
+    
+    // If already in our format
+    return data;
+  }
   
   // Calculate SVG dimensions with generous margins to prevent clipping
   const margin = 150;     // Increased margin to prevent clipping
@@ -212,7 +256,7 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
     const isSquare = node.shape === 'rect' || node.shape === 'square';
     const isDeceased = (node as any).isDeceased;
     
-    const handlePersonAction = (action: 'addPartner' | 'addChild' | 'edit' | 'delete') => {
+    const handlePersonAction = (action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') => {
       if (onPersonAction) {
         onPersonAction(node.id, action);
       }
@@ -295,9 +339,9 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
         <PersonContextMenu
           onAddPartner={() => handlePersonAction('addPartner')}
           onAddChild={() => handlePersonAction('addChild')}
-          onAddFather={() => {}} 
-          onAddMother={() => {}}
-          onAddSibling={() => {}}
+          onAddFather={() => handlePersonAction('addFather')}
+          onAddMother={() => handlePersonAction('addMother')}
+          onAddSibling={() => handlePersonAction('addSibling')}
           onEditPerson={() => handlePersonAction('edit')}
           onDeletePerson={() => handlePersonAction('delete')}
         >
