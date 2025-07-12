@@ -6,14 +6,14 @@ import PersonContextMenu from './PersonContextMenu';
 
 type PersonSymbolProps = {
   person: Person;
-  onPersonAction?: (personId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => void;
+  onPersonAction?: (personId: string, action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') => void;
 };
 
 const PersonSymbol = ({ person, onPersonAction }: PersonSymbolProps) => {
   const IconComponent = person.gender === 'female' ? Circle : Square;
   const isDeceased = person.isDeceased || !!person.deathDate;
   
-  const handlePersonAction = (action: 'addPartner' | 'addChild' | 'edit' | 'delete') => {
+  const handlePersonAction = (action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') => {
     if (onPersonAction) {
       onPersonAction(person.id, action);
     }
@@ -49,6 +49,9 @@ const PersonSymbol = ({ person, onPersonAction }: PersonSymbolProps) => {
         <PersonContextMenu
           onAddPartner={() => handlePersonAction('addPartner')}
           onAddChild={() => handlePersonAction('addChild')}
+          onAddFather={() => handlePersonAction('addFather')}
+          onAddMother={() => handlePersonAction('addMother')}
+          onAddSibling={() => handlePersonAction('addSibling')}
           onEditPerson={() => handlePersonAction('edit')}
           onDeletePerson={() => handlePersonAction('delete')}
         >

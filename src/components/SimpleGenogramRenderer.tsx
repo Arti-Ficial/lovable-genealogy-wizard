@@ -289,6 +289,9 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
         <PersonContextMenu
           onAddPartner={() => handlePersonAction('addPartner')}
           onAddChild={() => handlePersonAction('addChild')}
+          onAddFather={() => {}} 
+          onAddMother={() => {}}
+          onAddSibling={() => {}}
           onEditPerson={() => handlePersonAction('edit')}
           onDeletePerson={() => handlePersonAction('delete')}
         >

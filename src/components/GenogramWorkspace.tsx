@@ -53,26 +53,62 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
   };
 
   const handleSavePerson = (personData: Omit<Person, 'id' | 'position'>) => {
-    // Wenn ein Partner oder Kind hinzugefügt wird, berücksichtige den Kontext
+    // Wenn ein Partner, Kind, Elternteil oder Geschwister hinzugefügt wird, berücksichtige den Kontext
     let modifiedPersonData = { ...personData };
     
-    if (selectedPersonForAction && currentRelationship === 'child') {
-      // Für Kinder: Setze die ausgewählte Person und deren Partner als Eltern
+    if (selectedPersonForAction) {
       const selectedPerson = people.find(p => p.id === selectedPersonForAction);
-      const partner = people.find(p => 
-        p.relationship === 'partner' && selectedPerson?.relationship === 'self' ||
-        (selectedPerson?.relationship === 'partner' && p.relationship === 'self')
-      );
       
-      const parentIds = [selectedPersonForAction];
-      if (partner) {
-        parentIds.push(partner.id);
+      if (currentRelationship === 'child') {
+        // Für Kinder: Setze die ausgewählte Person und deren Partner als Eltern
+        const partner = people.find(p => 
+          p.relationship === 'partner' && selectedPerson?.relationship === 'self' ||
+          (selectedPerson?.relationship === 'partner' && p.relationship === 'self')
+        );
+        
+        const parentIds = [selectedPersonForAction];
+        if (partner) {
+          parentIds.push(partner.id);
+        }
+        
+        modifiedPersonData = {
+          ...personData,
+          parentIds
+        };
+      } else if (currentRelationship === 'father' || currentRelationship === 'mother') {
+        // Für Eltern: Prüfe ob bereits ein anderes Elternteil existiert
+        const existingParent = people.find(p => 
+          (p.relationship === 'father' || p.relationship === 'mother') && 
+          p.relationship !== currentRelationship
+        );
+        
+        if (existingParent) {
+          // Falls bereits ein Elternteil existiert, füge diesen als Partner hinzu
+          modifiedPersonData = {
+            ...personData,
+            relationship: currentRelationship,
+            relationshipStatus: 'married' as const
+          };
+        }
+      } else if (currentRelationship === 'sibling') {
+        // Für Geschwister: Finde die Eltern der ausgewählten Person
+        let parentIds: string[] = [];
+        
+        if (selectedPerson?.parentIds && selectedPerson.parentIds.length > 0) {
+          parentIds = selectedPerson.parentIds;
+        } else if (selectedPerson?.relationship === 'self') {
+          // Wenn die ausgewählte Person "self" ist, suche nach deren Eltern
+          const parents = people.filter(p => 
+            p.relationship === 'father' || p.relationship === 'mother'
+          );
+          parentIds = parents.map(p => p.id);
+        }
+        
+        modifiedPersonData = {
+          ...personData,
+          parentIds: parentIds.length > 0 ? parentIds : undefined
+        };
       }
-      
-      modifiedPersonData = {
-        ...personData,
-        parentIds
-      };
     }
     
     const newPerson: Person = {
@@ -304,7 +340,7 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
     setCurrentRelationshipEdit(null);
   };
 
-  const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => {
+  const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') => {
     console.log('Person action:', action, 'for node:', nodeId);
     switch (action) {
       case 'addPartner':
@@ -315,6 +351,21 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
       case 'addChild':
         setSelectedPersonForAction(nodeId);
         setCurrentRelationship('child');
+        setModalOpen(true);
+        break;
+      case 'addFather':
+        setSelectedPersonForAction(nodeId);
+        setCurrentRelationship('father');
+        setModalOpen(true);
+        break;
+      case 'addMother':
+        setSelectedPersonForAction(nodeId);
+        setCurrentRelationship('mother');
+        setModalOpen(true);
+        break;
+      case 'addSibling':
+        setSelectedPersonForAction(nodeId);
+        setCurrentRelationship('sibling');
         setModalOpen(true);
         break;
       case 'edit':

@@ -9,7 +9,7 @@ import ConnectionLines from './ConnectionLines';
 type GenogramCanvasProps = {
   people: Person[];
   personalInfo: PersonalInfo;
-  onPersonAction?: (personId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => void;
+  onPersonAction?: (personId: string, action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') => void;
 };
 
 const GenogramCanvas = ({ people, personalInfo, onPersonAction }: GenogramCanvasProps) => {
@@ -27,6 +27,9 @@ const GenogramCanvas = ({ people, personalInfo, onPersonAction }: GenogramCanvas
           <PersonContextMenu
             onAddPartner={() => onPersonAction('ego', 'addPartner')}
             onAddChild={() => onPersonAction('ego', 'addChild')}
+            onAddFather={() => onPersonAction('ego', 'addFather')}
+            onAddMother={() => onPersonAction('ego', 'addMother')}
+            onAddSibling={() => onPersonAction('ego', 'addSibling')}
             onEditPerson={() => onPersonAction('ego', 'edit')}
             onDeletePerson={() => onPersonAction('ego', 'delete')}
           >
