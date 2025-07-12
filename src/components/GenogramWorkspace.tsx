@@ -303,22 +303,29 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
     setCurrentRelationshipEdit(null);
   };
 
-  const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete' | 'add-partner' | 'add-child' | 'delete-person') => {
+  const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => {
     console.log('Person action:', action, 'for node:', nodeId);
     switch (action) {
       case 'addPartner':
-      case 'add-partner':
         setSelectedPersonForAction(nodeId);
         setCurrentRelationship('partner');
         setModalOpen(true);
         break;
       case 'addChild':
-      case 'add-child':
         setSelectedPersonForAction(nodeId);
         setCurrentRelationship('child');
         setModalOpen(true);
         break;
       case 'edit':
+        // Handle editing of ego person
+        if (nodeId === 'ego') {
+          toast({
+            title: "Info",
+            description: "Ihre persönlichen Daten können Sie auf der ersten Seite bearbeiten.",
+          });
+          return;
+        }
+        
         const personToEdit = people.find(p => p.id === nodeId);
         if (personToEdit) {
           setEditingPerson(personToEdit);
@@ -326,7 +333,16 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         }
         break;
       case 'delete':
-      case 'delete-person':
+        // Prevent deleting ego person
+        if (nodeId === 'ego') {
+          toast({
+            title: "Nicht möglich",
+            description: "Sie können sich selbst nicht löschen.",
+            variant: "destructive"
+          });
+          return;
+        }
+        
         setPersonToDelete(nodeId);
         setDeleteConfirmOpen(true);
         break;
