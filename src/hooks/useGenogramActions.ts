@@ -104,29 +104,52 @@ export const useGenogramActions = () => {
   ) => {
     console.log('Person action:', action, 'for node:', nodeId);
     
+    // Map backend node ID to local person ID
+    const getLocalPersonId = (backendNodeId: string) => {
+      if (backendNodeId === 'person-1') {
+        return 'ego'; // Special case for ego person
+      }
+      // For other backend IDs like person-2, person-3, find corresponding local person
+      const foundPerson = people.find(p => {
+        if (backendNodeId.startsWith('person-')) {
+          const nodeNumber = parseInt(backendNodeId.split('-')[1]);
+          return nodeNumber > 1; // Find first non-ego person for now
+        }
+        return false;
+      });
+      return foundPerson?.id || backendNodeId;
+    };
+
+    const localPersonId = getLocalPersonId(nodeId);
+    
     switch (action) {
       case 'addPartner':
-        setSelectedPersonForAction(nodeId);
+        console.log('Setting selected person for action (addPartner):', localPersonId);
+        setSelectedPersonForAction(localPersonId);
         setCurrentRelationship('partner');
         setModalOpen(true);
         break;
       case 'addChild':
-        setSelectedPersonForAction(nodeId);
+        console.log('Setting selected person for action (addChild):', localPersonId);
+        setSelectedPersonForAction(localPersonId);
         setCurrentRelationship('child');
         setModalOpen(true);
         break;
       case 'addFather':
-        setSelectedPersonForAction(nodeId);
+        console.log('Setting selected person for action (addFather):', localPersonId);
+        setSelectedPersonForAction(localPersonId);
         setCurrentRelationship('father');
         setModalOpen(true);
         break;
       case 'addMother':
-        setSelectedPersonForAction(nodeId);
+        console.log('Setting selected person for action (addMother):', localPersonId);
+        setSelectedPersonForAction(localPersonId);
         setCurrentRelationship('mother');
         setModalOpen(true);
         break;
       case 'addSibling':
-        setSelectedPersonForAction(nodeId);
+        console.log('Setting selected person for action (addSibling):', localPersonId);
+        setSelectedPersonForAction(localPersonId);
         setCurrentRelationship('sibling');
         setModalOpen(true);
         break;
@@ -139,16 +162,16 @@ export const useGenogramActions = () => {
           return;
         }
         
-        let localPersonId = nodeId;
+        let editLocalPersonId = nodeId;
         if (nodeId.startsWith('person-') && !nodeId.includes('person-1')) {
           const foundPerson = people.find(p => {
             const nodeNumber = parseInt(nodeId.split('-')[1]);
             return p.id && nodeNumber > 1;
           });
-          localPersonId = foundPerson?.id || nodeId;
+          editLocalPersonId = foundPerson?.id || nodeId;
         }
         
-        const personToEdit = people.find(p => p.id === localPersonId);
+        const personToEdit = people.find(p => p.id === editLocalPersonId);
         if (personToEdit) {
           setEditingPerson(personToEdit);
           setEditModalOpen(true);
