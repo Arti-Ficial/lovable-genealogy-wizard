@@ -1,6 +1,16 @@
 
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Person, PersonalInfo, RelationshipStatus } from '@/types/genogram';
 import PersonModal from './PersonModal';
 import RelationshipEditModal from './RelationshipEditModal';
@@ -30,6 +40,9 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
   } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [mermaidCode, setMermaidCode] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [personToDelete, setPersonToDelete] = useState<string | null>(null);
+  const [selectedPersonForAction, setSelectedPersonForAction] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleAddPerson = (relationship: 'mother' | 'father' | 'sibling' | 'partner' | 'child') => {
@@ -38,14 +51,39 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
   };
 
   const handleSavePerson = (personData: Omit<Person, 'id' | 'position'>) => {
+    // Wenn ein Partner oder Kind hinzugefügt wird, berücksichtige den Kontext
+    let modifiedPersonData = { ...personData };
+    
+    if (selectedPersonForAction && currentRelationship === 'child') {
+      // Für Kinder: Setze die ausgewählte Person und deren Partner als Eltern
+      const selectedPerson = people.find(p => p.id === selectedPersonForAction);
+      const partner = people.find(p => 
+        p.relationship === 'partner' && selectedPerson?.relationship === 'self' ||
+        (selectedPerson?.relationship === 'partner' && p.relationship === 'self')
+      );
+      
+      const parentIds = [selectedPersonForAction];
+      if (partner) {
+        parentIds.push(partner.id);
+      }
+      
+      modifiedPersonData = {
+        ...personData,
+        parentIds
+      };
+    }
+    
     const newPerson: Person = {
-      ...personData,
+      ...modifiedPersonData,
       id: Date.now().toString(),
-      position: getPositionForRelationship(personData.relationship)
+      position: getPositionForRelationship(modifiedPersonData.relationship)
     };
     
     setPeople(prev => [...prev, newPerson]);
     console.log('New person added:', newPerson);
+    
+    // Reset der Auswahl
+    setSelectedPersonForAction(null);
   };
 
   const getPositionForRelationship = (relationship: string) => {
@@ -259,10 +297,12 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
     console.log('Person action:', action, 'for node:', nodeId);
     switch (action) {
       case 'addPartner':
+        setSelectedPersonForAction(nodeId);
         setCurrentRelationship('partner');
         setModalOpen(true);
         break;
       case 'addChild':
+        setSelectedPersonForAction(nodeId);
         setCurrentRelationship('child');
         setModalOpen(true);
         break;
@@ -274,12 +314,32 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         }
         break;
       case 'delete':
-        toast({
-          title: "Funktion in Entwicklung", 
-          description: "Die Löschfunktion wird bald verfügbar sein.",
-        });
+        setPersonToDelete(nodeId);
+        setDeleteConfirmOpen(true);
         break;
     }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (personToDelete) {
+      // Entferne die Person und alle Beziehungen zu dieser Person
+      setPeople(prev => prev.filter(p => p.id !== personToDelete));
+      
+      // Entferne auch Referenzen in parentIds anderer Personen
+      setPeople(prev => prev.map(person => ({
+        ...person,
+        parentIds: person.parentIds?.filter(parentId => parentId !== personToDelete)
+      })));
+
+      const deletedPerson = people.find(p => p.id === personToDelete);
+      toast({
+        title: "Person gelöscht",
+        description: `${deletedPerson?.name || 'Die Person'} wurde erfolgreich entfernt.`,
+      });
+    }
+    
+    setDeleteConfirmOpen(false);
+    setPersonToDelete(null);
   };
 
   const handleEditPerson = (personData: Omit<Person, 'id' | 'position'>) => {
@@ -341,7 +401,10 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
 
       <PersonModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedPersonForAction(null);
+        }}
         onSave={handleSavePerson}
         relationship={currentRelationship}
         existingPeople={people}
@@ -369,6 +432,26 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         currentStatus={currentRelationshipEdit?.currentStatus || 'married'}
         personNames={currentRelationshipEdit?.personNames || { from: '', to: '' }}
       />
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Person löschen</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchten Sie diese Person wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+              Alle Beziehungen zu dieser Person werden ebenfalls entfernt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmOpen(false)}>
+              Abbrechen
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
+              Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
