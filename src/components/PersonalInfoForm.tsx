@@ -19,10 +19,9 @@ type PersonalInfoFormProps = {
   personalInfo: PersonalInfo;
   onUpdatePersonalInfo: (field: keyof PersonalInfo, value: any) => void;
   onSubmit: () => void;
-  isLoading?: boolean;
 };
 
-const PersonalInfoForm = ({ personalInfo, onUpdatePersonalInfo, onSubmit, isLoading = false }: PersonalInfoFormProps) => {
+const PersonalInfoForm = ({ personalInfo, onUpdatePersonalInfo, onSubmit }: PersonalInfoFormProps) => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-2xl mx-auto shadow-xl animate-fade-in">
@@ -138,9 +137,9 @@ const PersonalInfoForm = ({ personalInfo, onUpdatePersonalInfo, onSubmit, isLoad
               onClick={onSubmit}
               size="lg"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
-              disabled={isLoading || !personalInfo.name || !personalInfo.birthDate || !personalInfo.gender || !personalInfo.maritalStatus}
+              disabled={!personalInfo.name || !personalInfo.birthDate || !personalInfo.gender || !personalInfo.maritalStatus}
             >
-              {isLoading ? "Genogramm wird erstellt..." : "Genogramm erstellen"}
+              Weiter zur Kernfamilie
             </Button>
           </div>
         </CardContent>
