@@ -27,9 +27,71 @@ const GenogramWizard = () => {
     setCurrentStep('personal');
   };
 
-  const handlePersonalInfoSubmit = () => {
+  const handlePersonalInfoSubmit = async () => {
     console.log('Personal Info:', personalInfo);
-    setCurrentStep('workspace');
+    setIsLoading(true);
+    
+    try {
+      // Create a basic person object from personal info
+      const mainPerson = {
+        id: 1,
+        name: personalInfo.name,
+        birthDate: personalInfo.birthDate ? personalInfo.birthDate.toISOString().split('T')[0] : null,
+        gender: personalInfo.gender,
+        maritalStatus: personalInfo.maritalStatus,
+        position: { x: 0, y: 0 }
+      };
+
+      const genogramData = {
+        persons: [mainPerson],
+        relationships: []
+      };
+
+      console.log('Sending personal info to API:', genogramData);
+
+      // Send to API
+      const response = await fetch('https://trkmuc.app.n8n.cloud/webhook-test/12345', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(genogramData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('API response:', result);
+        
+        if (result.genogramData) {
+          setGenogramData(result.genogramData);
+          setCurrentStep('result');
+          toast({
+            title: "Genogramm erfolgreich erstellt!",
+            description: "Ihr Genogramm wurde basierend auf Ihren Angaben generiert.",
+          });
+        } else if (result.mermaidCode) {
+          setMermaidCode(result.mermaidCode);
+          setCurrentStep('result');
+          toast({
+            title: "Genogramm erfolgreich erstellt!",
+            description: "Ihr Genogramm wurde basierend auf Ihren Angaben generiert.",
+          });
+        } else {
+          throw new Error('No genogram data in response');
+        }
+      } else {
+        throw new Error('API call failed');
+      }
+    } catch (error) {
+      console.error('Error generating genogram:', error);
+      toast({
+        title: "Fehler",
+        description: "Beim Erstellen des Genogramms ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLoadTestFamily = () => {
@@ -68,6 +130,7 @@ const GenogramWizard = () => {
         personalInfo={personalInfo}
         onUpdatePersonalInfo={updatePersonalInfo}
         onSubmit={handlePersonalInfoSubmit}
+        isLoading={isLoading}
       />
     );
   }
