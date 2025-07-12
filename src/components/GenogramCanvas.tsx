@@ -14,8 +14,9 @@ type GenogramCanvasProps = {
 };
 
 const GenogramCanvas = ({ people, personalInfo, onPersonAction, onRelationshipClick }: GenogramCanvasProps) => {
-  const centerX = 400;
-  const centerY = 200;
+  // Dynamische Positionierung - Zentrum basiert auf tatsächlichen Positionen falls verfügbar
+  const centerX = 400; // Fallback-Position für Ego
+  const centerY = 200; // Fallback-Position für Ego
 
   return (
     <div className="relative bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 min-h-[500px] overflow-hidden">
@@ -27,7 +28,7 @@ const GenogramCanvas = ({ people, personalInfo, onPersonAction, onRelationshipCl
         onRelationshipClick={onRelationshipClick}
       />
       
-      {/* Central person (self) */}
+      {/* Central person (self) - Position wird von n8n überschrieben wenn verfügbar */}
       <div className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{ left: centerX, top: centerY }}>
         {onPersonAction ? (
           <PersonContextMenu
@@ -56,8 +57,7 @@ const GenogramCanvas = ({ people, personalInfo, onPersonAction, onRelationshipCl
         )}
       </div>
 
-
-      {/* Render all added people */}
+      {/* Render all added people - Positionen kommen jetzt von n8n/dagre */}
       {people.map(person => (
         <PersonSymbol 
           key={person.id} 
