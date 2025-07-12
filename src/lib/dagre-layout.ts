@@ -20,6 +20,7 @@ export type GenogramInput = {
     name: string;
     gender: 'male' | 'female';
     isEgo?: boolean;
+    isDeceased?: boolean;
   }>;
   relationships: Array<{
     from: number;
@@ -38,6 +39,7 @@ export type GenogramBackendData = {
     shape: string;
     isEgo?: boolean;
     isDummy?: boolean;
+    isDeceased?: boolean;
   }>;
   edges: Array<{
     from: string;
@@ -55,6 +57,7 @@ export type GenogramLayoutResult = {
     x: number;
     y: number;
     isEgo?: boolean;
+    isDeceased?: boolean;
   }>;
   lines: Array<{
     fromX: number;
@@ -123,7 +126,8 @@ export function calculateGenogramLayoutFromBackend(input: GenogramBackendData): 
         shape: node.shape as 'circle' | 'rect',
         x: node.x,
         y: node.y,
-        isEgo: originalNode?.isEgo || false
+        isEgo: originalNode?.isEgo || false,
+        isDeceased: originalNode?.isDeceased || false
       };
     });
   
@@ -311,7 +315,8 @@ export function calculateGenogramLayout(input: GenogramInput): GenogramLayoutRes
       shape: node.shape as 'circle' | 'rect',
       x: node.x,
       y: node.y,
-      isEgo: person?.isEgo || false
+      isEgo: person?.isEgo || false,
+      isDeceased: person?.isDeceased || false
     };
   });
   
