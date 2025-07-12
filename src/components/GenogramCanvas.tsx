@@ -1,70 +1,55 @@
-
 import React from 'react';
-import { Person, PersonalInfo, RelationshipStatus } from '@/types/genogram';
-import PersonSymbol from './PersonSymbol';
-import PersonContextMenu from './PersonContextMenu';
-
-import ImprovedConnectionLines from './ImprovedConnectionLines';
+import { Person, PersonalInfo } from '@/types/genogram';
+import FamilyIcon from './FamilyIcon';
+import SimpleGenogramRenderer from './SimpleGenogramRenderer';
 
 type GenogramCanvasProps = {
   people: Person[];
   personalInfo: PersonalInfo;
-  onPersonAction?: (personId: string, action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') => void;
-  onRelationshipClick?: (fromId: string, toId: string, status: RelationshipStatus) => void;
+  genogramData: any;
+  onPersonAction: (nodeId: string, action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') => void;
+  onRelationshipAction: (lineId: string, fromId: string, toId: string, action: 'edit') => void;
 };
 
-const GenogramCanvas = ({ people, personalInfo, onPersonAction, onRelationshipClick }: GenogramCanvasProps) => {
-  // Dynamische Positionierung - Zentrum basiert auf tatsächlichen Positionen falls verfügbar
-  const centerX = 400; // Fallback-Position für Ego
-  const centerY = 200; // Fallback-Position für Ego
+const GenogramCanvas = ({ people, personalInfo, genogramData, onPersonAction, onRelationshipAction }: GenogramCanvasProps) => {
+  if (people.length > 0 && genogramData) {
+    return (
+      <SimpleGenogramRenderer 
+        data={genogramData}
+        onPersonAction={onPersonAction}
+        onRelationshipAction={onRelationshipAction}
+      />
+    );
+  }
+
+  if (people.length > 0) {
+    return (
+      <div className="text-center space-y-4">
+        <div className="text-lg font-semibold text-gray-700">
+          {people.length + 1} Personen hinzugefügt
+        </div>
+        <div className="text-sm text-gray-500">
+          Das Layout wird berechnet...
+        </div>
+        <div className="flex flex-wrap justify-center gap-3 mt-4">
+          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+            {personalInfo.name} (Sie)
+          </div>
+          {people.map(person => (
+            <div key={person.id} className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-sm">
+              {person.name}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="relative bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 min-h-[500px] overflow-hidden">
-      {/* Connection lines */}
-      <ImprovedConnectionLines 
-        people={people} 
-        centerX={centerX} 
-        centerY={centerY}
-        onRelationshipClick={onRelationshipClick}
-      />
-      
-      {/* Central person (self) - Position wird von n8n überschrieben wenn verfügbar */}
-      <div className="absolute transform -translate-x-1/2 -translate-y-1/2" style={{ left: centerX, top: centerY }}>
-        {onPersonAction ? (
-          <PersonContextMenu
-            onAddPartner={() => onPersonAction('ego', 'addPartner')}
-            onAddChild={() => onPersonAction('ego', 'addChild')}
-            onAddFather={() => onPersonAction('ego', 'addFather')}
-            onAddMother={() => onPersonAction('ego', 'addMother')}
-            onAddSibling={() => onPersonAction('ego', 'addSibling')}
-            onEditPerson={() => onPersonAction('ego', 'edit')}
-            onDeletePerson={() => onPersonAction('ego', 'delete')}
-          >
-            <div className="bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg cursor-pointer hover:bg-blue-700 transition-colors">
-              <div className="text-center">
-                <div className="font-semibold text-lg">{personalInfo.name}</div>
-                <div className="text-sm opacity-90">Sie</div>
-              </div>
-            </div>
-          </PersonContextMenu>
-        ) : (
-          <div className="bg-blue-600 text-white px-4 py-3 rounded-lg shadow-lg">
-            <div className="text-center">
-              <div className="font-semibold text-lg">{personalInfo.name}</div>
-              <div className="text-sm opacity-90">Sie</div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Render all added people - Positionen kommen jetzt von n8n/dagre */}
-      {people.map(person => (
-        <PersonSymbol 
-          key={person.id} 
-          person={person} 
-          onPersonAction={onPersonAction}
-        />
-      ))}
+    <div className="text-center text-gray-500">
+      <FamilyIcon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+      <p className="text-lg">Fügen Sie Familienmitglieder hinzu</p>
+      <p className="text-sm">Klicken Sie mit der rechten Maustaste auf eine Person, um neue Familienmitglieder hinzuzufügen</p>
     </div>
   );
 };
