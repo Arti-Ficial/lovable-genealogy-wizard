@@ -117,38 +117,110 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
       position: getPositionForRelationship(modifiedPersonData.relationship)
     };
     
-    setPeople(prev => [...prev, newPerson]);
+    setPeople(prev => {
+      const updated = [...prev, newPerson];
+      // Wenn Geschwister oder Kinder hinzugefügt werden, repositioniere alle der gleichen Gruppe
+      if (modifiedPersonData.relationship === 'sibling' || modifiedPersonData.relationship === 'child') {
+        return recalculateGroupPositions(updated, modifiedPersonData.relationship);
+      }
+      return updated;
+    });
     console.log('New person added:', newPerson);
     
     // Reset der Auswahl
     setSelectedPersonForAction(null);
   };
 
-  const getPositionForRelationship = (relationship: string) => {
-    const baseX = 400;
-    const baseY = 200;
-    const levelSpacing = 120;  // Vertikaler Abstand zwischen Generationen
-    const personSpacing = 150; // Horizontaler Abstand zwischen Personen
+  const recalculateGroupPositions = (updatedPeople: Person[], groupType: string) => {
+    const egoX = 400;
+    const egoY = 200;
+    const generationSpacing = 150;
+    const personSpacing = 200;
     
-    // Zähle bereits existierende Personen dieser Beziehungsart
-    const existingOfSameType = people.filter(p => p.relationship === relationship);
-    const siblingOffset = existingOfSameType.length * personSpacing;
+    return updatedPeople.map(person => {
+      if (person.relationship !== groupType) return person;
+      
+      const sameGroupPeople = updatedPeople.filter(p => p.relationship === groupType);
+      const personIndex = sameGroupPeople.findIndex(p => p.id === person.id);
+      const totalInGroup = sameGroupPeople.length;
+      
+      if (groupType === 'sibling') {
+        // Geschwister horizontal zentriert auf gleicher Ebene
+        const siblingGroupWidth = totalInGroup * personSpacing;
+        const siblingStartX = egoX - (siblingGroupWidth / 2) + (personSpacing / 2);
+        
+        return {
+          ...person,
+          position: { x: siblingStartX + (personIndex * personSpacing), y: egoY }
+        };
+      } else if (groupType === 'child') {
+        // Kinder horizontal zentriert unter Eltern
+        const partner = updatedPeople.find(p => p.relationship === 'partner');
+        const parentCenterX = partner ? (egoX + partner.position.x) / 2 : egoX;
+        
+        const childGroupWidth = totalInGroup * personSpacing;
+        const childStartX = parentCenterX - (childGroupWidth / 2) + (personSpacing / 2);
+        
+        return {
+          ...person,
+          position: { x: childStartX + (personIndex * personSpacing), y: egoY + generationSpacing }
+        };
+      }
+      
+      return person;
+    });
+  };
+
+  const getPositionForRelationship = (relationship: string) => {
+    const egoX = 400;
+    const egoY = 200;
+    const generationSpacing = 150;  // Vertikaler Abstand zwischen Generationen
+    const personSpacing = 200;      // Horizontaler Abstand zwischen Personen
+    const partnerSpacing = 250;     // Abstand zu Partnern
     
     switch (relationship) {
       case 'mother':
-        return { x: baseX - 100, y: baseY - levelSpacing };
+        // Mutter links von der Mitte der Elternebene
+        return { x: egoX - 125, y: egoY - generationSpacing };
+      
       case 'father':
-        return { x: baseX + 100, y: baseY - levelSpacing };
+        // Vater rechts von der Mitte der Elternebene
+        return { x: egoX + 125, y: egoY - generationSpacing };
+      
       case 'partner':
-        return { x: baseX + 200, y: baseY };
+        // Partner rechts vom Ego auf gleicher Höhe
+        return { x: egoX + partnerSpacing, y: egoY };
+      
       case 'sibling':
-        // Geschwister nebeneinander positionieren
-        return { x: baseX - 250 - siblingOffset, y: baseY };
+        // Geschwister auf gleicher Ebene wie Ego, horizontal zentriert unter Eltern
+        const existingSiblings = people.filter(p => p.relationship === 'sibling');
+        const siblingIndex = existingSiblings.length;
+        const totalSiblings = siblingIndex + 1; // +1 für das neue Geschwister
+        
+        // Berechne die Startposition für die Geschwistergruppe (zentriert unter Eltern)
+        const siblingGroupWidth = totalSiblings * personSpacing;
+        const siblingStartX = egoX - (siblingGroupWidth / 2) + (personSpacing / 2);
+        
+        return { x: siblingStartX + (siblingIndex * personSpacing), y: egoY };
+      
       case 'child':
-        // Kinder nebeneinander unter den Eltern
-        return { x: baseX - 100 + siblingOffset, y: baseY + levelSpacing };
+        // Kinder unter den Eltern, horizontal zentriert
+        const existingChildren = people.filter(p => p.relationship === 'child');
+        const childIndex = existingChildren.length;
+        const totalChildren = childIndex + 1; // +1 für das neue Kind
+        
+        // Finde Partner des Ego
+        const partner = people.find(p => p.relationship === 'partner');
+        const parentCenterX = partner ? (egoX + partner.position.x) / 2 : egoX;
+        
+        // Berechne die Startposition für die Kindergruppe (zentriert unter Eltern)
+        const childGroupWidth = totalChildren * personSpacing;
+        const childStartX = parentCenterX - (childGroupWidth / 2) + (personSpacing / 2);
+        
+        return { x: childStartX + (childIndex * personSpacing), y: egoY + generationSpacing };
+      
       default:
-        return { x: baseX, y: baseY };
+        return { x: egoX, y: egoY };
     }
   };
 
