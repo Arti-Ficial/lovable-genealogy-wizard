@@ -11,7 +11,7 @@ type PersonSymbolProps = {
 
 const PersonSymbol = ({ person, onPersonAction }: PersonSymbolProps) => {
   const IconComponent = person.gender === 'female' ? Circle : Square;
-  const isDeceased = !!person.deathDate;
+  const isDeceased = person.isDeceased || !!person.deathDate;
   
   const handlePersonAction = (action: 'addPartner' | 'addChild' | 'edit' | 'delete') => {
     if (onPersonAction) {
@@ -27,7 +27,10 @@ const PersonSymbol = ({ person, onPersonAction }: PersonSymbolProps) => {
         />
         {isDeceased && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-8 h-0.5 bg-red-500 rotate-45"></div>
+            <div className="relative w-12 h-12">
+              <div className="absolute inset-0 w-full h-0.5 bg-gray-800 rotate-45 top-1/2 -translate-y-1/2"></div>
+              <div className="absolute inset-0 w-full h-0.5 bg-gray-800 -rotate-45 top-1/2 -translate-y-1/2"></div>
+            </div>
           </div>
         )}
       </div>

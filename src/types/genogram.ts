@@ -15,6 +15,7 @@ export type Person = {
   parentIds?: string[]; // IDs der Eltern dieser Person
   position: { x: number; y: number };
   relationshipStatus?: RelationshipStatus; // Für Partner-Beziehungen
+  isDeceased?: boolean; // Verstorben-Status
 };
 
 export type PersonalInfo = {

@@ -17,6 +17,8 @@ type GenogramWorkspaceProps = {
 const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
   const [people, setPeople] = useState<Person[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
   const [relationshipModalOpen, setRelationshipModalOpen] = useState(false);
   const [currentRelationship, setCurrentRelationship] = useState<'mother' | 'father' | 'sibling' | 'partner' | 'child'>('mother');
   const [currentRelationshipEdit, setCurrentRelationshipEdit] = useState<{
@@ -265,10 +267,11 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         setModalOpen(true);
         break;
       case 'edit':
-        toast({
-          title: "Funktion in Entwicklung",
-          description: "Die Bearbeitungsfunktion wird bald verfügbar sein.",
-        });
+        const personToEdit = people.find(p => p.id === nodeId);
+        if (personToEdit) {
+          setEditingPerson(personToEdit);
+          setEditModalOpen(true);
+        }
         break;
       case 'delete':
         toast({
@@ -276,6 +279,25 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
           description: "Die Löschfunktion wird bald verfügbar sein.",
         });
         break;
+    }
+  };
+
+  const handleEditPerson = (personData: Omit<Person, 'id' | 'position'>) => {
+    if (editingPerson) {
+      const updatedPerson: Person = {
+        ...personData,
+        id: editingPerson.id,
+        position: editingPerson.position
+      };
+      
+      setPeople(prev => prev.map(p => p.id === editingPerson.id ? updatedPerson : p));
+      setEditModalOpen(false);
+      setEditingPerson(null);
+      
+      toast({
+        title: "Person aktualisiert",
+        description: `${updatedPerson.name} wurde erfolgreich bearbeitet.`,
+      });
     }
   };
 
@@ -307,31 +329,7 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
           <GenogramCanvas
             people={people}
             personalInfo={personalInfo}
-            onPersonAction={(personId, action) => {
-              console.log('Person action in workspace:', action, 'for person:', personId);
-              switch (action) {
-                case 'addPartner':
-                  setCurrentRelationship('partner');
-                  setModalOpen(true);
-                  break;
-                case 'addChild':
-                  setCurrentRelationship('child');
-                  setModalOpen(true);
-                  break;
-                case 'edit':
-                  toast({
-                    title: "Funktion in Entwicklung",
-                    description: "Die Bearbeitungsfunktion wird bald verfügbar sein.",
-                  });
-                  break;
-                case 'delete':
-                  toast({
-                    title: "Funktion in Entwicklung", 
-                    description: "Die Löschfunktion wird bald verfügbar sein.",
-                  });
-                  break;
-              }
-            }}
+            onPersonAction={handlePersonAction}
           />
 
           <GenerateButton
@@ -347,6 +345,18 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         onSave={handleSavePerson}
         relationship={currentRelationship}
         existingPeople={people}
+      />
+
+      <PersonModal
+        isOpen={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false);
+          setEditingPerson(null);
+        }}
+        onSave={handleEditPerson}
+        relationship={editingPerson?.relationship === 'self' ? 'child' : editingPerson?.relationship || 'child'}
+        existingPeople={people}
+        existingPerson={editingPerson || undefined}
       />
 
       <RelationshipEditModal

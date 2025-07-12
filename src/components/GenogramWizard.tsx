@@ -7,6 +7,7 @@ import PersonalInfoForm from './PersonalInfoForm';
 import GenogramWorkspace from './GenogramWorkspace';
 import GenogramResult from './GenogramResult';
 import RelationshipEditModal from './RelationshipEditModal';
+import PersonModal from './PersonModal';
 
 const GenogramWizard = () => {
   const [currentStep, setCurrentStep] = useState<'welcome' | 'personal' | 'workspace' | 'result'>('welcome');
@@ -21,11 +22,13 @@ const GenogramWizard = () => {
   const [genogramData, setGenogramData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
+  const [isPersonEditModalOpen, setIsPersonEditModalOpen] = useState(false);
   const [selectedRelationship, setSelectedRelationship] = useState<{
     lineId: string;
     fromId: string;
     toId: string;
   } | null>(null);
+  const [editingPerson, setEditingPerson] = useState<any>(null);
   const { toast } = useToast();
 
   const handleStartGenogram = () => {
@@ -170,9 +173,67 @@ const GenogramWizard = () => {
 
   const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'edit' | 'delete') => {
     console.log('Person action in wizard:', action, 'for node:', nodeId);
-    // For now, just show a message that this functionality is coming
-    // In the future, this could open a modal or navigate to an edit mode
-    // TODO: Implement full person action functionality in wizard mode
+    
+    if (action === 'edit' && genogramData) {
+      // Find the person to edit from genogramData
+      let personToEdit = null;
+      
+      if (genogramData.nodes) {
+        // Dagre format - find in nodes
+        personToEdit = genogramData.nodes.find((node: any) => node.id === nodeId);
+      } else if (genogramData.persons) {
+        // Backend format - find in persons
+        personToEdit = genogramData.persons.find((person: any) => `person-${person.id}` === nodeId);
+      }
+      
+      if (personToEdit) {
+        setEditingPerson(personToEdit);
+        setIsPersonEditModalOpen(true);
+      }
+    }
+  };
+
+  const handlePersonEditSave = (personData: any) => {
+    if (editingPerson && genogramData) {
+      const updatedGenogramData = { ...genogramData };
+      
+      if (updatedGenogramData.nodes) {
+        // Dagre format - update the nodes array
+        updatedGenogramData.nodes = updatedGenogramData.nodes.map((node: any) => {
+          if (node.id === editingPerson.id) {
+            return { 
+              ...node, 
+              name: personData.name,
+              gender: personData.gender,
+              isDeceased: personData.isDeceased
+            };
+          }
+          return node;
+        });
+      } else if (updatedGenogramData.persons) {
+        // Backend format - update the persons array
+        updatedGenogramData.persons = updatedGenogramData.persons.map((person: any) => {
+          if (`person-${person.id}` === editingPerson.id) {
+            return { 
+              ...person, 
+              name: personData.name,
+              gender: personData.gender === 'male' ? 'male' : personData.gender === 'female' ? 'female' : 'unknown',
+              isDeceased: personData.isDeceased
+            };
+          }
+          return person;
+        });
+      }
+      
+      setGenogramData(updatedGenogramData);
+      setIsPersonEditModalOpen(false);
+      setEditingPerson(null);
+      
+      toast({
+        title: "Person aktualisiert",
+        description: `${personData.name} wurde erfolgreich bearbeitet.`,
+      });
+    }
   };
 
   const handleRelationshipAction = (lineId: string, fromId: string, toId: string, action: 'edit') => {
@@ -305,6 +366,20 @@ const GenogramWizard = () => {
           }}
         />
         
+        {editingPerson && (
+          <PersonModal
+            isOpen={isPersonEditModalOpen}
+            onClose={() => {
+              setIsPersonEditModalOpen(false);
+              setEditingPerson(null);
+            }}
+            onSave={handlePersonEditSave}
+            relationship={editingPerson.relationship === 'self' ? 'child' : editingPerson.relationship || 'child'}
+            existingPeople={[]}
+            existingPerson={editingPerson}
+          />
+        )}
+
         {selectedRelationship && (
           <RelationshipEditModal
             isOpen={isRelationshipModalOpen}

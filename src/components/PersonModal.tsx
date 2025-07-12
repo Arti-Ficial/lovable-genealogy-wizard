@@ -21,21 +21,26 @@ type PersonModalProps = {
   onSave: (person: Omit<Person, 'id' | 'position'>) => void;
   relationship: 'mother' | 'father' | 'sibling' | 'partner' | 'child';
   existingPeople: Person[];
+  existingPerson?: Person; // Für das Bearbeiten einer existierenden Person
 };
 
-const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople }: PersonModalProps) => {
+const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople, existingPerson }: PersonModalProps) => {
   const [formData, setFormData] = useState({
-    name: '',
-    gender: '' as Gender | '',
-    birthDate: undefined as Date | undefined,
-    deathDate: undefined as Date | undefined,
-    occupation: '',
-    notes: '',
-    parentIds: [] as string[],
-    relationshipStatus: 'married' as RelationshipStatus
+    name: existingPerson?.name || '',
+    gender: existingPerson?.gender || '' as Gender | '',
+    birthDate: existingPerson?.birthDate,
+    deathDate: existingPerson?.deathDate,
+    occupation: existingPerson?.occupation || '',
+    notes: existingPerson?.notes || '',
+    parentIds: existingPerson?.parentIds || [] as string[],
+    relationshipStatus: existingPerson?.relationshipStatus || 'married' as RelationshipStatus,
+    isDeceased: existingPerson?.isDeceased || false
   });
 
   const getModalTitle = () => {
+    if (existingPerson) {
+      return 'Person bearbeiten';
+    }
     switch (relationship) {
       case 'mother': return 'Mutter erfassen';
       case 'father': return 'Vater erfassen';
@@ -71,9 +76,10 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople }: 
       deathDate: formData.deathDate,
       occupation: formData.occupation || undefined,
       notes: formData.notes || undefined,
-      relationship: relationship === 'child' ? 'child' : relationship,
-      parentIds: shouldShowParentSelection() ? formData.parentIds : undefined,
-      relationshipStatus: relationship === 'partner' ? formData.relationshipStatus : undefined
+      relationship: existingPerson ? existingPerson.relationship : (relationship === 'child' ? 'child' : relationship),
+      parentIds: shouldShowParentSelection() ? formData.parentIds : (existingPerson?.parentIds || undefined),
+      relationshipStatus: relationship === 'partner' ? formData.relationshipStatus : (existingPerson?.relationshipStatus || undefined),
+      isDeceased: formData.isDeceased
     });
 
     // Reset form
@@ -85,7 +91,8 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople }: 
       occupation: '',
       notes: '',
       parentIds: [],
-      relationshipStatus: 'married'
+      relationshipStatus: 'married',
+      isDeceased: false
     });
     onClose();
   };
@@ -100,7 +107,8 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople }: 
       occupation: '',
       notes: '',
       parentIds: [],
-      relationshipStatus: 'married'
+      relationshipStatus: 'married',
+      isDeceased: false
     });
     onClose();
   };
@@ -235,6 +243,20 @@ const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople }: 
                 />
               </PopoverContent>
             </Popover>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <Checkbox
+              id="isDeceased"
+              checked={formData.isDeceased}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isDeceased: checked as boolean }))}
+            />
+            <Label 
+              htmlFor="isDeceased"
+              className="text-base font-medium text-gray-700 cursor-pointer"
+            >
+              Person ist verstorben
+            </Label>
           </div>
 
           <div className="space-y-2">

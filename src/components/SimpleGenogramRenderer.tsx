@@ -204,6 +204,7 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
     const halfSize = size / 2;
     const isCircle = node.shape === 'circle';
     const isSquare = node.shape === 'rect' || node.shape === 'square';
+    const isDeceased = (node as any).isDeceased;
     
     const handlePersonAction = (action: 'addPartner' | 'addChild' | 'edit' | 'delete') => {
       if (onPersonAction) {
@@ -247,6 +248,30 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
         >
           {node.name}
         </text>
+        
+        {/* Show X for deceased persons */}
+        {isDeceased && (
+          <g>
+            <line
+              x1={node.x - halfSize + 10}
+              y1={node.y - halfSize + 10}
+              x2={node.x + halfSize - 10}
+              y2={node.y + halfSize - 10}
+              stroke="rgb(55, 65, 81)"
+              strokeWidth="3"
+              className="pointer-events-none"
+            />
+            <line
+              x1={node.x + halfSize - 10}
+              y1={node.y - halfSize + 10}
+              x2={node.x - halfSize + 10}
+              y2={node.y + halfSize - 10}
+              stroke="rgb(55, 65, 81)"
+              strokeWidth="3"
+              className="pointer-events-none"
+            />
+          </g>
+        )}
       </>
     );
     
