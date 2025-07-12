@@ -40,6 +40,7 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
   } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [mermaidCode, setMermaidCode] = useState<string | null>(null);
+  const [genogramData, setGenogramData] = useState<any>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [personToDelete, setPersonToDelete] = useState<string | null>(null);
   const [selectedPersonForAction, setSelectedPersonForAction] = useState<string | null>(null);
@@ -222,14 +223,22 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         const result = await response.json();
         console.log('API response:', result);
         
-        if (result.mermaidCode) {
+        if (result.genogramData) {
+          // Neue API-Antwort mit genogramData
+          setGenogramData(result.genogramData);
+          toast({
+            title: "Genogramm erfolgreich erstellt!",
+            description: "Ihr Genogramm wurde generiert und wird angezeigt.",
+          });
+        } else if (result.mermaidCode) {
+          // Fallback für alte API-Antwort
           setMermaidCode(result.mermaidCode);
           toast({
             title: "Genogramm erfolgreich erstellt!",
             description: "Ihr Genogramm wurde generiert und wird angezeigt.",
           });
         } else {
-          throw new Error('No mermaid code in response');
+          throw new Error('No genogram data in response');
         }
       } else {
         throw new Error('API call failed');
@@ -249,6 +258,7 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
 
   const handleReset = () => {
     setMermaidCode(null);
+    setGenogramData(null);
     setPeople([]);
   };
 
@@ -361,10 +371,11 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
     }
   };
 
-  // If mermaid code is available, show the result view
-  if (mermaidCode) {
+  // If genogram data or mermaid code is available, show the result view
+  if (genogramData || mermaidCode) {
     return (
       <GenogramResult 
+        genogramData={genogramData}
         mermaidCode={mermaidCode} 
         onReset={handleReset}
         onPersonAction={handlePersonAction}
