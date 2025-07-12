@@ -48,7 +48,7 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
   const handleRelationshipStatusSave = (newStatus: any) =>
     genogramData.updateRelationshipStatus(newStatus, updateLayoutFromAPI);
 
-  const handlePersonAction = (nodeId: string, action: any) =>
+  const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') =>
     genogramActions.handlePersonAction(
       nodeId,
       action,
