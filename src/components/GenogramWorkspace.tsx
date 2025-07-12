@@ -129,7 +129,7 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
       const genogramData = createGenogramData(updatedPeople);
       console.log('Sending layout request to n8n:', genogramData);
       
-      const response = await fetch('https://trkmuc.app.n8n.cloud/webhook-test/12345', {
+      const response = await fetch('https://trkmuc.app.n8n.cloud/webhook/12345', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -370,7 +370,7 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
       console.log('Generated genogram data:', genogramData);
 
       // Send to API
-      const response = await fetch('https://trkmuc.app.n8n.cloud/webhook-test/12345', {
+      const response = await fetch('https://trkmuc.app.n8n.cloud/webhook/12345', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -632,7 +632,7 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
           <GenerateButton
             isGenerating={isGenerating}
             onGenerate={generateGenogramData}
-            buttonText="Layout finalisieren"
+            buttonText="Genogramm erstellen"
           />
         </CardContent>
       </Card>
