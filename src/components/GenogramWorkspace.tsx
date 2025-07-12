@@ -48,29 +48,19 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
   const handleRelationshipStatusSave = (newStatus: any) =>
     genogramData.updateRelationshipStatus(newStatus, updateLayoutFromAPI);
 
-  const handlePersonAction = (action, personId) => {
-    // Log zur Überprüfung, dass die Funktion aufgerufen wird
-    console.log(`Aktion '${action}' für Person '${personId}' wird ausgeführt.`);
-
-    // Setze die ausgewählte Person für das Modal
-    genogramData.setSelectedPersonForAction(personId);
-
-    // Öffne das Modal basierend auf der Aktion
-    if (action === 'add-partner' || action === 'add-child' || action === 'add-father' || action === 'add-mother' || action === 'add-sibling' || action === 'edit-person') {
-      genogramData.setModalOpen(true);
-    }
-
-    // Logik für das Löschen
-    if (action === 'delete-person') {
-      if (window.confirm('Möchten Sie diese Person und alle ihre Verbindungen wirklich löschen?')) {
-        // Hier kommt die Löschlogik hin
-        console.log(`Lösche Person ${personId}`);
-        // ... implementiere die Löschlogik ...
-        // Nach dem Löschen neu an die API senden
-        // sendToApi(updatedData); 
-      }
-    }
-  };
+  const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') =>
+    genogramActions.handlePersonAction(
+      nodeId,
+      action,
+      genogramData.people,
+      genogramData.setSelectedPersonForAction,
+      genogramData.setCurrentRelationship,
+      genogramData.setModalOpen,
+      genogramData.setEditingPerson,
+      genogramData.setEditModalOpen,
+      genogramData.setPersonToDelete,
+      genogramData.setDeleteConfirmOpen
+    );
 
   const handleRelationshipAction = (lineId: string, fromId: string, toId: string, action: 'edit') =>
     genogramActions.handleRelationshipAction(
