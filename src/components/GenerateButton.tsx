@@ -6,9 +6,10 @@ import { Loader2 } from 'lucide-react';
 type GenerateButtonProps = {
   isGenerating: boolean;
   onGenerate: () => void;
+  buttonText?: string;
 };
 
-const GenerateButton = ({ isGenerating, onGenerate }: GenerateButtonProps) => {
+const GenerateButton = ({ isGenerating, onGenerate, buttonText = "Genogramm erstellen & visualisieren" }: GenerateButtonProps) => {
   return (
     <div className="mt-8 flex justify-center">
       <Button
@@ -24,7 +25,7 @@ const GenerateButton = ({ isGenerating, onGenerate }: GenerateButtonProps) => {
           </>
         ) : (
           <>
-            Genogramm erstellen & visualisieren
+            {buttonText}
           </>
         )}
       </Button>

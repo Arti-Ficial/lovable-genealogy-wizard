@@ -139,7 +139,7 @@ const PersonalInfoForm = ({ personalInfo, onUpdatePersonalInfo, onSubmit }: Pers
               className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
               disabled={!personalInfo.name || !personalInfo.birthDate || !personalInfo.gender || !personalInfo.maritalStatus}
             >
-              Weiter zur Kernfamilie
+              Arbeitsbereich starten
             </Button>
           </div>
         </CardContent>

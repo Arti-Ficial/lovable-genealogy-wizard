@@ -90,9 +90,7 @@ const GenogramResult = ({ genogramData, mermaidCode, onReset, onPersonAction, on
         <CardContent>
           <div className="bg-white rounded-lg border p-6 mb-6 min-h-[500px] flex items-center justify-center overflow-auto">
             <SimpleGenogramRenderer 
-              data={dataToRender} 
-              onPersonAction={onPersonAction}
-              onRelationshipAction={onRelationshipAction}
+              data={dataToRender}
             />
           </div>
 

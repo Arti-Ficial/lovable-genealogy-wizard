@@ -22,9 +22,10 @@ import { useToast } from '@/hooks/use-toast';
 
 type GenogramWorkspaceProps = {
   personalInfo: PersonalInfo;
+  onGenogramGenerated: (data: any, mermaidCode?: string) => void;
 };
 
-const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
+const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorkspaceProps) => {
   const [people, setPeople] = useState<Person[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -225,14 +226,14 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
         
         if (result.genogramData) {
           // Neue API-Antwort mit genogramData
-          setGenogramData(result.genogramData);
+          onGenogramGenerated(result.genogramData);
           toast({
             title: "Genogramm erfolgreich erstellt!",
             description: "Ihr Genogramm wurde generiert und wird angezeigt.",
           });
         } else if (result.mermaidCode) {
           // Fallback für alte API-Antwort
-          setMermaidCode(result.mermaidCode);
+          onGenogramGenerated(null, result.mermaidCode);
           toast({
             title: "Genogramm erfolgreich erstellt!",
             description: "Ihr Genogramm wurde generiert und wird angezeigt.",
@@ -390,18 +391,7 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
     }
   };
 
-  // If genogram data or mermaid code is available, show the result view
-  if (genogramData || mermaidCode) {
-    return (
-      <GenogramResult 
-        genogramData={genogramData}
-        mermaidCode={mermaidCode} 
-        onReset={handleReset}
-        onPersonAction={handlePersonAction}
-        onRelationshipAction={handleRelationshipAction}
-      />
-    );
-  }
+  // Entfernt - nach "Layout finalisieren" wird direkt zum GenogramResult gewechselt
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50 flex items-center justify-center p-4">
@@ -425,6 +415,7 @@ const GenogramWorkspace = ({ personalInfo }: GenogramWorkspaceProps) => {
           <GenerateButton
             isGenerating={isGenerating}
             onGenerate={generateGenogramData}
+            buttonText="Layout finalisieren"
           />
         </CardContent>
       </Card>
