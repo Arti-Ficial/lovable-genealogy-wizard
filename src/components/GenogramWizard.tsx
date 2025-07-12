@@ -190,6 +190,13 @@ const GenogramWizard = () => {
         setEditingPerson(personToEdit);
         setIsPersonEditModalOpen(true);
       }
+    } else if (action === 'addPartner' || action === 'addChild' || action === 'delete') {
+      // For now, show a toast that these features are not yet implemented in result view
+      toast({
+        title: "Funktion noch nicht verfügbar",
+        description: "Diese Funktion ist im Ergebnis-Modus noch nicht implementiert. Gehen Sie zurück zum Arbeitsbereich, um Personen hinzuzufügen oder zu löschen.",
+        variant: "destructive"
+      });
     }
   };
 
