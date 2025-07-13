@@ -191,12 +191,19 @@ export const useGenogramData = (personalInfo: PersonalInfo) => {
     }
   };
 
+  // Wrapper function for setModalOpen with debug logging
+  const setModalOpenWithDebug = (open: boolean) => {
+    console.log('useGenogramData: setModalOpen called with:', open);
+    setModalOpen(open);
+    console.log('useGenogramData: modalOpen state should now be:', open);
+  };
+
   return {
     // State
     people,
     setPeople,
     modalOpen,
-    setModalOpen,
+    setModalOpen: setModalOpenWithDebug,
     editModalOpen,
     setEditModalOpen,
     editingPerson,
