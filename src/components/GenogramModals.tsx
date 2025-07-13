@@ -71,11 +71,14 @@ const GenogramModals = ({
   setDeleteConfirmOpen,
   onDeleteConfirm
 }: GenogramModalsProps) => {
+  console.log('GenogramModals render - modalOpen:', modalOpen, 'currentRelationship:', currentRelationship);
+  
   return (
     <>
       <PersonModal
         isOpen={modalOpen}
         onClose={() => {
+          console.log('PersonModal onClose called');
           setModalOpen(false);
           setSelectedPersonForAction(null);
         }}

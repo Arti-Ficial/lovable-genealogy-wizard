@@ -151,13 +151,17 @@ export const useGenogramActions = () => {
         console.log('Setting selected person for action (addMother):', localPersonId);
         setSelectedPersonForAction(localPersonId);
         setCurrentRelationship('mother');
+        console.log('Opening modal for addMother');
         setModalOpen(true);
+        console.log('Modal should be open now');
         break;
       case 'addSibling':
         console.log('Setting selected person for action (addSibling):', localPersonId);
         setSelectedPersonForAction(localPersonId);
         setCurrentRelationship('sibling');
+        console.log('Opening modal for addSibling');
         setModalOpen(true);
+        console.log('Modal should be open now');
         break;
       case 'edit':
         if (nodeId === 'person-1' || nodeId === '1') {

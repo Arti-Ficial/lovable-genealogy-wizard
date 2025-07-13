@@ -25,6 +25,8 @@ type PersonModalProps = {
 };
 
 const PersonModal = ({ isOpen, onClose, onSave, relationship, existingPeople, existingPerson }: PersonModalProps) => {
+  console.log('PersonModal render - isOpen:', isOpen, 'relationship:', relationship);
+  
   const [formData, setFormData] = useState({
     name: existingPerson?.name || '',
     gender: existingPerson?.gender || '' as Gender | '',
