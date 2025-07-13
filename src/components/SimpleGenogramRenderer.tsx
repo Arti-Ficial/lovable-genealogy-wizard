@@ -257,8 +257,12 @@ const SimpleGenogramRenderer = ({ data, onPersonAction, onRelationshipAction }: 
     const isDeceased = (node as any).isDeceased;
     
     const handlePersonAction = (action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') => {
+      console.log('SimpleGenogramRenderer: handlePersonAction called with:', { nodeId: node.id, action });
       if (onPersonAction) {
+        console.log('SimpleGenogramRenderer: calling onPersonAction');
         onPersonAction(node.id, action);
+      } else {
+        console.log('SimpleGenogramRenderer: onPersonAction is not defined!');
       }
     };
 

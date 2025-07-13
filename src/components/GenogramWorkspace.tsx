@@ -48,8 +48,9 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
   const handleRelationshipStatusSave = (newStatus: any) =>
     genogramData.updateRelationshipStatus(newStatus, updateLayoutFromAPI);
 
-  const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') =>
-    genogramActions.handlePersonAction(
+  const handlePersonAction = (nodeId: string, action: 'addPartner' | 'addChild' | 'addFather' | 'addMother' | 'addSibling' | 'edit' | 'delete') => {
+    console.log('GenogramWorkspace: handlePersonAction called with:', { nodeId, action });
+    return genogramActions.handlePersonAction(
       nodeId,
       action,
       genogramData.people,
@@ -61,6 +62,7 @@ const GenogramWorkspace = ({ personalInfo, onGenogramGenerated }: GenogramWorksp
       genogramData.setPersonToDelete,
       genogramData.setDeleteConfirmOpen
     );
+  }
 
   const handleRelationshipAction = (lineId: string, fromId: string, toId: string, action: 'edit') =>
     genogramActions.handleRelationshipAction(
