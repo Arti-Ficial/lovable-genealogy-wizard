@@ -127,19 +127,25 @@ export const useGenogramActions = () => {
         console.log('Setting selected person for action (addPartner):', localPersonId);
         setSelectedPersonForAction(localPersonId);
         setCurrentRelationship('partner');
+        console.log('Opening modal for addPartner');
         setModalOpen(true);
+        console.log('Modal should be open now');
         break;
       case 'addChild':
         console.log('Setting selected person for action (addChild):', localPersonId);
         setSelectedPersonForAction(localPersonId);
         setCurrentRelationship('child');
+        console.log('Opening modal for addChild');
         setModalOpen(true);
+        console.log('Modal should be open now');
         break;
       case 'addFather':
         console.log('Setting selected person for action (addFather):', localPersonId);
         setSelectedPersonForAction(localPersonId);
         setCurrentRelationship('father');
+        console.log('Opening modal for addFather');
         setModalOpen(true);
+        console.log('Modal should be open now');
         break;
       case 'addMother':
         console.log('Setting selected person for action (addMother):', localPersonId);
